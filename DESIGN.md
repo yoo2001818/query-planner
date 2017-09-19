@@ -37,3 +37,38 @@ using the index, scanning from top of `b` from bottom of `b`.
 If that's not possible, sorting can be done using sorting algorithm, which
 should be avoided, especially if the memory space is not large enough.
 
+### Result
+Result like this should be displayed for single table and only ANDs query.
+
+```js
+[{
+  id: 0,
+  type: 'indexScan',
+  table: 'a',
+  name: 'a',
+  lower: true,
+  lowerValue: 1,
+  lowerEqual: true,
+  upperBound: true,
+  upperValue: 10,
+  upperEqual: true,
+  output: [1],
+}, {
+  id: 1,
+  type: 'filter',
+  criteria: [
+    ['c', '=', 'test'],
+  ],
+  output: [2],
+}, {
+  id: 2,
+  type: 'sort',
+  criteria: [
+    ['b', 'desc'],
+  ],
+  output: [3],
+}, {
+  id: 3,
+  type: 'out',
+}]
+```
