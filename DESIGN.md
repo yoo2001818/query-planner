@@ -39,6 +39,8 @@ should be avoided, especially if the memory space is not large enough.
 
 ### Result
 Result like this should be displayed for single table and only ANDs query.
+If the whole database is partitioned, it might be possible to parallelize it
+between multiple computers, too.
 
 ```js
 [{
@@ -72,3 +74,14 @@ Result like this should be displayed for single table and only ANDs query.
   type: 'out',
 }]
 ```
+
+## Case 2. Single table, AND / OR / NOT
+Although this query still performs on the single table with single read, since
+OR and NOT exists, it becomes significiantly difficult compared to case 1.
+
+`{ where: { $or: [{ a: 1, b: 2 }, { a: 2, b: 1 }] }, order: ['b', 'DESC'] }`
+
+If values in the OR is directly indexable, those values should be merged
+together.
+
+i.e. above statement should look up `[[1, 2], [2, 1]]` in `a.b`.
