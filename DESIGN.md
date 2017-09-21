@@ -85,3 +85,19 @@ If values in the OR is directly indexable, those values should be merged
 together.
 
 i.e. above statement should look up `[[1, 2], [2, 1]]` in `a.b`.
+
+Of course, if the user is using OR, that means the query can be separately
+read:
+
+`{ where: { $or: [{ a: { $gt: 1 } }, { b: { $lt: 1 } }] }}`
+
+In the above query, the whole query can be separated to a > 1, and b < 1. The
+data can be duplicated in this case, however, merging them is not that
+difficult problem.
+
+But, if a range completely contains the other range, that range should be
+ignored. (Same for AND, too)
+
+`{ where: { $or: [{ a: { $gt: 1 } }, { a: { $gt: 3 } }] }}`
+
+The above query can be converted to a > 1.
