@@ -101,3 +101,14 @@ ignored. (Same for AND, too)
 `{ where: { $or: [{ a: { $gt: 1 } }, { a: { $gt: 3 } }] }}`
 
 The above query can be converted to a > 1.
+
+What if non-indexable values are provided?
+
+`{ where: { $or: [{ a: { $gt: 1, $lt: 5 }, c: 9 }, { a: { $gt: 10 }, c: 8 }] }}`
+
+- If `a` is indexed, 1 < a < 5, and a > 10 can be fetched and checked against
+  c.
+- If `c` is indexed, c = [8, 9] can be fetched and checked against a.
+- If `a.c` is indexed, ... it'd be same as a.
+- If `c.a` is indexed, [[9, 1 < a < 5], [8, 10 < a]] can be fetched.
+- If nothing is indexed, do full scan as it'd cost O(n).
