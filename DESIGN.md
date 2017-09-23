@@ -20,6 +20,14 @@ reads the database, and outputs data. Each pipes are connected to other pipe.
 Pipe network makes a directed acyclic graph, which can be run on distributed
 systems, too.
 
+## Parallel processing
+If the database uses distributed parallel computing (That is, queries are
+processed using many computers, not to just improve redundancy), it might be
+good idea to randomly partition the data and store them on separate buckets.
+
+That way, the computers only have to process the rows they know -
+A 'hypervisor' can merge them right away.
+
 ## Case 1. Single table, only ANDs
 This query is really simple: `{ id: 1, title: 'aa', body: 'bb' }`
 
@@ -112,3 +120,45 @@ What if non-indexable values are provided?
 - If `a.c` is indexed, ... it'd be same as a.
 - If `c.a` is indexed, [[9, 1 < a < 5], [8, 10 < a]] can be fetched.
 - If nothing is indexed, do full scan as it'd cost O(n).
+
+When processing the query, Only values with indexes should be taken into
+account - other values should be ignored while selecting the input.
+
+Implementing NOT is trivial - we can convert NOT (A OR B) into NOT A AND NOT
+B quite easily.
+
+### Sorting
+Obviously indexes can be used to sort the array, however, there is multiple way
+of sorting the array.
+
+- Merge sort. O(n), just sort the array coming from the multiple inputs.
+- Quick sort (filesort). O(n^2), though n log n in most cases. Sort everything.
+
+Merge sort can be performed if one row of each input has been provided, and
+quick sort can be performed if every input has been processed.
+
+Obviously, quick sort can suffer from memory issues, so it should be avoided,
+especially in frontend web environment as it can't use HDDs to sort.
+
+```js
+{
+  where: { $or: [{ a: { $gt: 1, $lt: 5 }, c: 9 }, { a: { $gt: 10 }, c: 8 }] },
+  order: [['a', 'asc']],
+}
+```
+
+- If `a` is indexed, 1 < a < 5, and a > 10 can be fetched and checked against
+  c, then directly outputted without sorting. We just have to process them
+  sequentially.
+- If `c` is indexed, c = [8, 9] can be fetched and checked against a.
+- If `a.c` is indexed, ... it'd be same as a.
+- If `c.a` is indexed, [[9, 1 < a < 5], [8, 10 < a]] can be fetched.
+
+
+## Case 3. Single table, subquery in where clause
+If the query includes a subquery that doesn't reference upper variables, the
+query planner can simply get the results of subquery and pass it to the upper
+query.
+
+However, this is not expressable using JSON based query - SQL would be much
+better.
