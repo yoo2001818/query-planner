@@ -6,6 +6,9 @@ queries, RDBMS join support should be considered.
 
 Sure, query planners are cool, but how are we going to implement them?
 
+This article has heavily referenced
+[https://sqlite.org/optoverview.html](SQLite Query Optimizer Overview).
+
 ## Input data
 Query planner should accept the query (obviously), and table information,
 index information, and metrics information, which is optional.
@@ -20,6 +23,21 @@ reads the database, and outputs data. Each pipes are connected to other pipe.
 Pipe network makes a directed acyclic graph, which can be run on distributed
 systems, too.
 
+### Pipe types
+Pipes have three kinds of types: input, process, output.
+
+#### Input
+- indexMatch
+- indexScan
+
+#### Process
+- filter
+- sort
+- union
+
+#### Output
+- out
+
 ## Parallel processing
 If the database uses distributed parallel computing (That is, queries are
 processed using many computers, not to just improve redundancy), it might be
@@ -32,6 +50,27 @@ A 'hypervisor' can merge them right away.
 This query is really simple: `{ id: 1, title: 'aa', body: 'bb' }`
 
 It just have to pick most better index, then run filters on them.
+
+### Index selection
+In order to utilize the index, certain criterias have to be met.
+
+Suppose that there's an index storing `[a, b, c]`:
+
+- Last variable in the query, which is c if c is specified, b if b is
+  specified, ...  can utilize all query type, It can use eq, lt, gt,
+  neq, ... everything!
+  - If eq is used, it'll just fetch required values.
+  - If lt, gt is used, range query will be used.
+  - If everything else, including neq is used, full scan will occur. i.e.
+    `[a, b, -Infinity]` - `[a, b, Infinity]` will be scanned.
+- Other than that, only eq can be used. If eq has multiple values, it'll fetch
+  multiple values at once.
+- In order to utilize the index, variable 1 to N-1 must be occupied with eq.
+  - if only a is specified, the index can be used.
+  - if a and b is specified, the index can be used.
+  - if only b is specified, the index can't be used.
+  - if only c is specified, the index can't be used.
+  - if a and c is specified, the index can't be used.
 
 ### Sorting
 However, if the result should be sorted, it should check if sorting can be
@@ -82,6 +121,11 @@ between multiple computers, too.
   type: 'out',
 }]
 ```
+
+### Output in index
+The query planner doesn't really consider using only indexes to create output,
+but, if the indexes covers all the output the query needs, the query doesn't
+even have to access the main table.
 
 ## Case 2. Single table, AND / OR / NOT
 Although this query still performs on the single table with single read, since
@@ -154,7 +198,6 @@ especially in frontend web environment as it can't use HDDs to sort.
 - If `a.c` is indexed, ... it'd be same as a.
 - If `c.a` is indexed, [[9, 1 < a < 5], [8, 10 < a]] can be fetched.
 
-
 ## Case 3. Single table, subquery in where clause
 If the query includes a subquery that doesn't reference upper variables, the
 query planner can simply get the results of subquery and pass it to the upper
@@ -162,3 +205,9 @@ query.
 
 However, this is not expressable using JSON based query - SQL would be much
 better.
+
+```sql
+SELECT * FROM a WHERE id IN (
+  SELECT id FROM a WHERE a > 5
+);
+```
