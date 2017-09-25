@@ -16,6 +16,13 @@ index information, and metrics information, which is optional.
 The query planner should only consider columns having indexes first, then it
 can use additional filters to filter them.
 
+### MongoDB Query Language
+Query planner should support MongoDB query language as first-class.
+
+### SQL
+SQL should be supported, but it should be converted to some kind of
+intermediate language - any kind of SQL AST would suffice.
+
 ## Output data
 The query planner should output a list of 'pipes'. Each pipe accepts input, or
 reads the database, and outputs data. Each pipes are connected to other pipe.
