@@ -1,0 +1,53 @@
+{
+  "name": "query-planner",
+  "version": "0.0.1",
+  "description": "Javascript database query planner",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "npm run jest && npm run lint",
+    "jest": "jest",
+    "jestWatch": "jest --watch --notify",
+    "build": "babel src -d lib --copy-files",
+    "lint": "eslint src/"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.jsx?$": "babel-jest"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yoo2001818/query-planner.git"
+  },
+  "author": "yoo2001818",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yoo2001818/query-planner/issues"
+  },
+  "homepage": "https://github.com/yoo2001818/query-planner#readme",
+  "dependencies": {
+    "async-btree": "^1.0.6"
+  },
+  "devDependencies": {
+    "babel-core": "^6.25.0",
+    "babel-eslint": "^7.2.3",
+    "babel-jest": "^20.0.3",
+    "babel-plugin-transform-async-generator-functions": "^6.24.1",
+    "babel-preset-env": "^1.6.0",
+    "babel-preset-react": "^6.24.1",
+    "babel-register": "^6.24.1",
+    "core-js": "^2.4.1",
+    "eslint": "^4.2.0",
+    "eslint-config-semistandard": "^11.0.0",
+    "eslint-config-standard": "^10.2.1",
+    "eslint-config-standard-jsx": "^4.0.2",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-node": "^5.1.1",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-react": "^7.1.0",
+    "eslint-plugin-standard": "^3.0.1",
+    "jest": "^20.0.4",
+    "jest-cli": "^20.0.4"
+  },
+  "optionalDependencies": {}
+}
