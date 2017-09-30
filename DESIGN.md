@@ -34,17 +34,19 @@ systems, too.
 Pipes have three kinds of types: input, process, output.
 
 #### Input
-Input pipe can read predefined set of values, or, read what's inserted to the
-pipe.
+Input pipe reads and process jobs from input, or provided constant value,
+simultaneously if possible.
 
-full returns full document values, and index only returns partital documents
+Each job can be a range, or a list of IDs, and can have a 'reverse' flag to
+reverse the results. A pipe runs inserted jobs simultaneously, which means that
+it returns jobs at random order, but each job will be correctly ordered.
+
+Each job can have additional props too - it can be used while doing table join,
+etc.
+
+`full` returns full document values, and `index` only returns partital documents
 reconstructed from tuples.
 So, in order to load the full document from the index, two inputs must be used.
-
-Operator can be a range, or a list of IDs. Range can be reversed;
-Additional props can be passed to it - they will be included in the output.
-Or partital document can be accepted as an operator. In that case, full
-document will be loaded.
 
 - full - Accepts a list of operators.
 - index - Accepts a list of operators.
