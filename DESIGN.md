@@ -114,32 +114,39 @@ between multiple computers, too.
 ```js
 [{
   id: 0,
-  type: 'indexScan',
+  type: 'index',
   table: 'a',
   name: 'a',
-  lower: true,
-  lowerValue: 1,
-  lowerEqual: true,
-  upperBound: true,
-  upperValue: 10,
-  upperEqual: true,
+  jobs: [{
+    range: true,
+    lower: true,
+    lowerValue: 1,
+    lowerEqual: true,
+    upperBound: true,
+    upperValue: 10,
+    upperEqual: true,
+  }],
   output: [1],
 }, {
   id: 1,
+  type: 'full',
+  table: 'a',
+}, {
+  id: 2,
   type: 'filter',
   criteria: [
     ['c', '=', 'test'],
   ],
-  output: [2],
+  output: [3],
 }, {
-  id: 2,
+  id: 3,
   type: 'sort',
   criteria: [
     ['b', 'desc'],
   ],
-  output: [3],
+  output: [4],
 }, {
-  id: 3,
+  id: 4,
   type: 'out',
 }]
 ```
