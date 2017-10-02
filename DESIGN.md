@@ -51,6 +51,20 @@ So, in order to load the full document from the index, two inputs must be used.
 - full - Accepts a list of operators.
 - index - Accepts a list of operators.
 
+##### Jobs
+Each job can be an array, or an object. If an array is provided, that array's
+contents are mapped to index's keys. If an object is provided, object's keys
+are mapped to index's keys.
+
+Jobs can additionally have `__meta__` property to store the additional
+metadata.
+
+###### Range
+
+###### Exact
+
+###### Load
+
 #### Process
 - filter
 - sort
