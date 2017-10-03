@@ -57,7 +57,12 @@ contents are mapped to index's keys. If an object is provided, object's keys
 are mapped to index's keys.
 
 Jobs can additionally have `__meta__` property to store the additional
-metadata.
+metadata. (Applicable for objects) These data will be included to the output
+job, so it can be used to join two tables.
+
+After the job is completed, the pipe sends 'job terminator' if instructed to do
+so. Underlying pipes should clean up the job then. Job terminator is marked
+with `__complete__`.
 
 ###### Range
 
@@ -85,7 +90,7 @@ A 'hypervisor' can merge them right away.
 ## Case 1. Single table, only ANDs
 This query is really simple: `{ id: 1, title: 'aa', body: 'bb' }`
 
-It just have to pick most better index, then run filters on them.
+It just have to pick best index, then run filters on them.
 
 ### Index selection
 In order to utilize the index, certain criterias have to be met.
