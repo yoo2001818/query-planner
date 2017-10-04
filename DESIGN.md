@@ -216,6 +216,18 @@ What if non-indexable values are provided?
 When processing the query, Only values with indexes should be taken into
 account - other values should be ignored while selecting the input.
 
+If multiple ORs are in the query, to simplify the query planner, only one OR
+clause should be selected.
+
+```sql
+SELECT * FROM table WHERE (A OR B) AND (C OR D) AND E;
+```
+
+In this case, `E` would be selected in all cases. But, since selecting multiple
+ORs involves cartesian product, which is O(n^m), it'd horribly inefficient.
+So, `A AND E` or `B AND E` can be selected, or `C AND E` or `D AND E` can be
+selected.
+
 Implementing NOT is trivial - we can convert NOT (A OR B) into NOT A AND NOT
 B quite easily.
 
