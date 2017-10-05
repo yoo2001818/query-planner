@@ -66,6 +66,10 @@ with `__complete__`.
 
 ###### Range
 
+```js
+{ low: true, lowValue: 5, lowEqual: true, high: false, highValue: 6, highEqual: false }
+```
+
 ###### Exact
 
 ###### Load
