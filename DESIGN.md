@@ -136,41 +136,45 @@ between multiple computers, too.
 
 ```js
 [{
-  id: 0,
   type: 'index',
-  table: 'a',
-  name: 'a',
-  jobs: [{
-    range: true,
-    lower: true,
-    lowerValue: 1,
-    lowerEqual: true,
-    upperBound: true,
-    upperValue: 10,
-    upperEqual: true,
-  }],
-  output: [1],
+  config: {
+    table: 'a',
+    name: 'a',
+    jobs: [{
+      range: true,
+      lower: true,
+      lowerValue: 1,
+      lowerEqual: true,
+      upperBound: true,
+      upperValue: 10,
+      upperEqual: true,
+    }],
+  }
 }, {
-  id: 1,
   type: 'full',
-  table: 'a',
+  config: {
+    table: 'a',
+  },
+  inputs: [0],
 }, {
-  id: 2,
   type: 'filter',
-  criteria: [
-    ['c', '=', 'test'],
-  ],
-  output: [3],
+  config: {
+    criteria: [
+      ['c', '=', 'test'],
+    ],
+  },
+  inputs: [1],
 }, {
-  id: 3,
   type: 'sort',
-  criteria: [
-    ['b', 'desc'],
-  ],
-  output: [4],
+  config: {
+    criteria: [
+      ['b', 'desc'],
+    ],
+  },
+  inputs: [2],
 }, {
-  id: 4,
   type: 'out',
+  inputs: [3],
 }]
 ```
 
