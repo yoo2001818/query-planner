@@ -1,15 +1,15 @@
 import { compare } from './comparator';
 
-// Operators are used to plan the query; User written JSONs are converted to
-// JSON with these operators.
-// The operator is a plot on a single axis - it performs a boolean operation on
+// Ranges are used to plan the query; User written JSONs are converted to
+// JSON with these ranges.
+// The range is a plot on a single axis - it performs a boolean operation on
 // the single axis.
 //
 // Thus, it's stored in a sorted array, and the database system reads it from
 // the first, quickly 'winds' the entire database while looking at the pattern.
-// it can read the operators from the reverse, too.
+// it can read the ranges from the reverse, too.
 //
-// Each operator has many instructions, telling that what range/value should be
+// Each range has many instructions, telling that what range/value should be
 // accepted or not.
 //
 // There are these types of instructions: <, >, <=, >=, ==, !=.
@@ -98,7 +98,7 @@ export function not(query) {
   // Simply put, this should be run like this:
   // - > and < should be inverted, along with 'equal'.
   // - If = is met outside, set '*' flag. If > and < is not met until the end,
-  //   insert '*' operator at the first. Then, convert it to !=.
+  //   insert '*' range at the first. Then, convert it to !=.
   // - If * is met, remove it.
   // - If != is met inside, change it to =. 
 
@@ -127,7 +127,7 @@ export function not(query) {
 }
 
 // The table tells how the 'inside' state should be while entering/exiting.
-const OPERATOR_TABLE = {
+const RANGE_TABLE = {
   '<': { enter: true, exit: false, flag: 2 },
   '>': { enter: false, exit: true, flag: 1 },
   '*': { enter: false, exit: true, flag: 1 },
@@ -156,7 +156,7 @@ const OR_EQUAL_ACTIONS = [
   (a, b) => (a.equal || b.equal) ? null : { type: '!=', value: a.value },
 ];
 
-// Please refer to OPERATOR_TABLE's flag and OR_EQUAL_ACTIONS to see how it
+// Please refer to RANGE_TABLE's flag and OR_EQUAL_ACTIONS to see how it
 // works.
 const OR_EQUAL_LUT = [
   0, 1, 1, 2, -1, 0, 3, 3, -1, -1, 0, 3, -1, -1, -1, 0,
@@ -168,16 +168,16 @@ export function or(a, b) {
   // Check initial state of the queries.
   //   <, *, != means inside, and >, = means outside.
   // Compare each values of the queries, progress smaller one.
-  // If both are outside and the operator enters 'inside' state,
+  // If both are outside and the range enters 'inside' state,
   //   insert that to the output and set 'inside' state.
-  // if only the query is inside and the operator leaves 'inside' state,
+  // if only the query is inside and the range leaves 'inside' state,
   //   insert that to the output and clear 'inside' state.
   if (a.length === 0) return b;
   if (b.length === 0) return a;
-  let aInside = OPERATOR_TABLE[a[0].type].enter;
-  let bInside = OPERATOR_TABLE[b[0].type].enter;
-  // We have to prepend * operator if the completed statement doesn't exit
-  // true state at all, and either A and B didn't provide * operator.
+  let aInside = RANGE_TABLE[a[0].type].enter;
+  let bInside = RANGE_TABLE[b[0].type].enter;
+  // We have to prepend * range if the completed statement doesn't exit
+  // true state at all, and either A and B didn't provide * range.
   let doPrepend = (aInside || bInside) &&
     !(aInside.type === '*' || bInside.type === '*');
   let aCount = 0;
@@ -188,13 +188,13 @@ export function or(a, b) {
     let compared = compareOp(a[aCount], b[bCount]);
     if (compared < 0) {
       let op = a[aCount];
-      let { exit } = OPERATOR_TABLE[op.type];
+      let { exit } = RANGE_TABLE[op.type];
       aInside = exit;
       if (!bInside) output.push(op);
       aCount += 1;
     } else if (compared > 0) {
       let op = b[bCount];
-      let { exit } = OPERATOR_TABLE[op.type];
+      let { exit } = RANGE_TABLE[op.type];
       bInside = exit;
       if (!aInside) output.push(op);
       bCount += 1;
@@ -209,8 +209,8 @@ export function or(a, b) {
       // According to this, a look up table has been created.
       let aOp = a[aCount];
       let bOp = b[bCount];
-      let { flag: aOpFlag, exit: aOpExit } = OPERATOR_TABLE[aOp.type];
-      let { flag: bOpFlag, exit: bOpExit } = OPERATOR_TABLE[bOp.type];
+      let { flag: aOpFlag, exit: aOpExit } = RANGE_TABLE[aOp.type];
+      let { flag: bOpFlag, exit: bOpExit } = RANGE_TABLE[bOp.type];
       let outputOp;
       if (aOpFlag < bOpFlag) {
         let flag = (aOpFlag << 2) | bOpFlag;
@@ -230,7 +230,7 @@ export function or(a, b) {
   // Digest remaining data.
   while (aCount < a.length) {
     let op = a[aCount];
-    let { exit } = OPERATOR_TABLE[op.type];
+    let { exit } = RANGE_TABLE[op.type];
     aInside = exit;
     if (!bInside) {
       output.push(op);
@@ -240,7 +240,7 @@ export function or(a, b) {
   }
   while (bCount < b.length) {
     let op = b[bCount];
-    let { exit } = OPERATOR_TABLE[op.type];
+    let { exit } = RANGE_TABLE[op.type];
     bInside = exit;
     if (!aInside) {
       output.push(op);
@@ -267,7 +267,7 @@ const AND_EQUAL_ACTIONS = [
   (a, b) => Object.assign({}, a, { equal: false }),
 ];
 
-// Please refer to OPERATOR_TABLE's flag and OR_EQUAL_ACTIONS to see how it
+// Please refer to RANGE_TABLE's flag and OR_EQUAL_ACTIONS to see how it
 // works.
 const AND_EQUAL_LUT = [
   2, 1, 1, 3, -1, 2, 0, 4, -1, -1, 4, 2, -1, -1, -1, 2,
@@ -278,8 +278,8 @@ export function and(a, b) {
   // 'inside' state.
   if (a.length === 0) return [];
   if (b.length === 0) return [];
-  let aInside = OPERATOR_TABLE[a[0].type].enter;
-  let bInside = OPERATOR_TABLE[b[0].type].enter;
+  let aInside = RANGE_TABLE[a[0].type].enter;
+  let bInside = RANGE_TABLE[b[0].type].enter;
   let aCount = 0;
   let bCount = 0;
   let output = [];
@@ -288,13 +288,13 @@ export function and(a, b) {
     let compared = compareOp(a[aCount], b[bCount]);
     if (compared < 0) {
       let op = a[aCount];
-      let { exit } = OPERATOR_TABLE[op.type];
+      let { exit } = RANGE_TABLE[op.type];
       aInside = exit;
       if (bInside && op.type !== '*') output.push(op);
       aCount += 1;
     } else if (compared > 0) {
       let op = b[bCount];
-      let { exit } = OPERATOR_TABLE[op.type];
+      let { exit } = RANGE_TABLE[op.type];
       bInside = exit;
       if (aInside && op.type !== '*') output.push(op);
       bCount += 1;
@@ -309,8 +309,8 @@ export function and(a, b) {
       // According to this, a look up table has been created.
       let aOp = a[aCount];
       let bOp = b[bCount];
-      let { flag: aOpFlag, exit: aOpExit } = OPERATOR_TABLE[aOp.type];
-      let { flag: bOpFlag, exit: bOpExit } = OPERATOR_TABLE[bOp.type];
+      let { flag: aOpFlag, exit: aOpExit } = RANGE_TABLE[aOp.type];
+      let { flag: bOpFlag, exit: bOpExit } = RANGE_TABLE[bOp.type];
       let outputOp;
       if (aOpFlag < bOpFlag) {
         let flag = (aOpFlag << 2) | bOpFlag;
@@ -329,7 +329,7 @@ export function and(a, b) {
   // Digest remaining data.
   while (aCount < a.length) {
     let op = a[aCount];
-    let { exit } = OPERATOR_TABLE[op.type];
+    let { exit } = RANGE_TABLE[op.type];
     aInside = exit;
     if (bInside) {
       output.push(op);
@@ -338,7 +338,7 @@ export function and(a, b) {
   }
   while (bCount < b.length) {
     let op = b[bCount];
-    let { exit } = OPERATOR_TABLE[op.type];
+    let { exit } = RANGE_TABLE[op.type];
     bInside = exit;
     if (aInside) {
       output.push(op);
