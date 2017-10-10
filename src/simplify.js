@@ -21,20 +21,36 @@ export default function simplify(tree, names = [], type = 'and') {
   for (let key in tree) {
     switch (key) {
       case '$eq':
+        keys[joinName(names)] = ranges.and(
+          keys[joinName(names)], ranges.eq([tree[key]]));
         break;
       case '$gt':
+        keys[joinName(names)] = ranges.and(
+          keys[joinName(names)], ranges.gt(tree[key]));
         break;
       case '$gte':
+        keys[joinName(names)] = ranges.and(
+          keys[joinName(names)], ranges.gt(tree[key], true));
         break;
       case '$in':
+        keys[joinName(names)] = ranges.and(
+          keys[joinName(names)], ranges.eq(tree[key]));
         break;
       case '$lt':
+        keys[joinName(names)] = ranges.and(
+          keys[joinName(names)], ranges.lt(tree[key]));
         break;
       case '$lte':
+        keys[joinName(names)] = ranges.and(
+          keys[joinName(names)], ranges.lt(tree[key], true));
         break;
       case '$ne':
+        keys[joinName(names)] = ranges.and(
+          keys[joinName(names)], ranges.neq([tree[key]]));
         break;
       case '$nin':
+        keys[joinName(names)] = ranges.and(
+          keys[joinName(names)], ranges.neq(tree[key]));
         break;
       case '$not':
         break;
