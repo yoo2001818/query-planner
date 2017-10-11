@@ -11,48 +11,48 @@ function joinName(names) {
   return names.join('.');
 }
 
-export default function simplify(tree, names = [], type = 'and') {
+export default function simplify(
+  tree, names = [], type = 'and', inverted = false,
+) {
   if (typeof tree !== 'object') {
     return ranges.eq([tree]);
   }
   let lastKey = null;
   const keys = [];
   const children = [];
+  function addConstraint(names, range) {
+    let nameStr = joinName(names);
+    if (keys[nameStr] == null) keys[nameStr] = range;
+    else keys[nameStr] = ranges.and(keys[nameStr], range);
+  }
   for (let key in tree) {
     switch (key) {
       case '$eq':
-        keys[joinName(names)] = ranges.and(
-          keys[joinName(names)], ranges.eq([tree[key]]));
+        addConstraint(names, ranges.eq([tree[key]]));
         break;
       case '$gt':
-        keys[joinName(names)] = ranges.and(
-          keys[joinName(names)], ranges.gt(tree[key]));
+        addConstraint(names, ranges.gt(tree[key]));
         break;
       case '$gte':
-        keys[joinName(names)] = ranges.and(
-          keys[joinName(names)], ranges.gt(tree[key], true));
+        addConstraint(names, ranges.gt(tree[key], true));
         break;
       case '$in':
-        keys[joinName(names)] = ranges.and(
-          keys[joinName(names)], ranges.eq(tree[key]));
+        addConstraint(names, ranges.eq(tree[key]));
         break;
       case '$lt':
-        keys[joinName(names)] = ranges.and(
-          keys[joinName(names)], ranges.lt(tree[key]));
+        addConstraint(names, ranges.lt(tree[key]));
         break;
       case '$lte':
-        keys[joinName(names)] = ranges.and(
-          keys[joinName(names)], ranges.lt(tree[key], true));
+        addConstraint(names, ranges.lt(tree[key], true));
         break;
       case '$ne':
-        keys[joinName(names)] = ranges.and(
-          keys[joinName(names)], ranges.neq([tree[key]]));
+        addConstraint(names, ranges.neq([tree[key]]));
         break;
       case '$nin':
-        keys[joinName(names)] = ranges.and(
-          keys[joinName(names)], ranges.neq(tree[key]));
+        addConstraint(names, ranges.neq(tree[key]));
         break;
       case '$not':
+        // A AND B = !(!A OR !B)
         break;
       case '$nor':
         break;
