@@ -12,18 +12,26 @@ function joinName(names) {
 }
 
 export default function simplify(
-  tree, names = [], type = 'and', inverted = false,
+  tree, names = [], isAnd = true, inverted = false,
 ) {
   if (typeof tree !== 'object') {
     return ranges.eq([tree]);
   }
   let lastKey = null;
-  const keys = [];
-  const children = [];
+  let keys = [];
+  let children = [];
   function addConstraint(names, range) {
     let nameStr = joinName(names);
-    if (keys[nameStr] == null) keys[nameStr] = range;
-    else keys[nameStr] = ranges.and(keys[nameStr], range);
+    let rangeVal = inverted ? ranges.not(range) : range;
+    if (keys[nameStr] == null) {
+      keys[nameStr] = rangeVal;
+      return;
+    }
+    if (isAnd) {
+      keys[nameStr] = ranges.and(keys[nameStr], rangeVal);
+    } else {
+      keys[nameStr] = ranges.or(keys[nameStr], rangeVal);
+    }
   }
   for (let key in tree) {
     switch (key) {
@@ -53,12 +61,35 @@ export default function simplify(
         break;
       case '$not':
         // A AND B = !(!A OR !B)
+        // Thus, it needs to be OR, while being inverted.
+        // This is applied to individual clauses too - everything needs to be
+        // inverted.
+        children.push(simplify(tree[key], names, !isAnd, !inverted));
         break;
       case '$nor':
+        // !(A OR B).
         break;
       case '$and':
+        // A AND B. Should be converted to OR if inverted.
+        if (isAnd === !inverted) {
+          // Merge keys and children
+          let newData = simplify(tree[key], names, !inverted, inverted);
+          keys = keys.concat(newData.keys);
+          children = children.concat(newData.children);
+        } else {
+          children.push(simplify(tree[key], names, !inverted, inverted));
+        }
         break;
       case '$or':
+        // A OR B. Should be converted to AND if inverted.
+        if (isAnd === inverted) {
+          // Merge keys and children
+          let newData = simplify(tree[key], names, inverted, inverted);
+          keys = keys.concat(newData.keys);
+          children = children.concat(newData.children);
+        } else {
+          children.push(simplify(tree[key], names, inverted, inverted));
+        }
         break;
       case '$exists':
         break;
@@ -75,5 +106,5 @@ export default function simplify(
         break;
     }
   }
-  return { type, keys, children };
+  return { isAnd, keys, children };
 }
