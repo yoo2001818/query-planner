@@ -12,14 +12,12 @@ function joinName(names) {
 }
 
 export default function simplify(
-  tree, names = [], isAnd = true, inverted = false,
+  tree, names = [], isAnd = true, inverted = false, keys = [], children = [],
 ) {
   if (typeof tree !== 'object') {
     return ranges.eq([tree]);
   }
   let lastKey = null;
-  let keys = [];
-  let children = [];
   function addConstraint(names, range) {
     let nameStr = joinName(names);
     let rangeVal = inverted ? ranges.not(range) : range;
@@ -73,22 +71,40 @@ export default function simplify(
         // A AND B. Should be converted to OR if inverted.
         if (isAnd === !inverted) {
           // Merge keys and children
-          let newData = simplify(tree[key], names, !inverted, inverted);
-          keys = keys.concat(newData.keys);
-          children = children.concat(newData.children);
+          tree[key].forEach(v => {
+            simplify(v, names, !inverted, inverted, keys, children);
+          });
         } else {
-          children.push(simplify(tree[key], names, !inverted, inverted));
+          let newValue = {
+            isAnd: !inverted,
+            keys: [],
+            children: [],
+          };
+          tree[key].forEach(v => {
+            simplify(v, names, newValue.isAnd, inverted,
+              newValue.keys, newValue.children);
+          });
+          children.push(newValue);
         }
         break;
       case '$or':
         // A OR B. Should be converted to AND if inverted.
         if (isAnd === inverted) {
           // Merge keys and children
-          let newData = simplify(tree[key], names, inverted, inverted);
-          keys = keys.concat(newData.keys);
-          children = children.concat(newData.children);
+          tree[key].forEach(v => {
+            simplify(v, names, inverted, inverted, keys, children);
+          });
         } else {
-          children.push(simplify(tree[key], names, inverted, inverted));
+          let newValue = {
+            isAnd: inverted,
+            keys: [],
+            children: [],
+          };
+          tree[key].forEach(v => {
+            simplify(v, names, newValue.isAnd, inverted,
+              newValue.keys, newValue.children);
+          });
+          children.push(newValue);
         }
         break;
       case '$exists':
