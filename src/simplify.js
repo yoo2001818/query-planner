@@ -14,10 +14,6 @@ function joinName(names) {
 export default function simplify(
   tree, names = [], isAnd = true, inverted = false, keys = [], children = [],
 ) {
-  if (typeof tree !== 'object') {
-    return ranges.eq([tree]);
-  }
-  let lastKey = null;
   function addConstraint(names, range) {
     let nameStr = joinName(names);
     let rangeVal = inverted ? ranges.not(range) : range;
@@ -30,6 +26,14 @@ export default function simplify(
     } else {
       keys[nameStr] = ranges.or(keys[nameStr], rangeVal);
     }
+  }
+  if (Array.isArray(tree)) {
+    addConstraint(names, ranges.eq(tree));
+    return { isAnd, keys, children };
+  }
+  if (typeof tree !== 'object') {
+    addConstraint(names, ranges.eq([tree]));
+    return { isAnd, keys, children };
   }
   for (let key in tree) {
     switch (key) {
@@ -117,9 +121,19 @@ export default function simplify(
         break;
       case '$size':
         break;
-      default:
-        lastKey = key;
+      default: {
+        // If current state is OR, or AND in inverted, we need to create new
+        // child.
+        if (isAnd !== inverted) {
+          simplify(tree[key], names.concat([key]),
+            isAnd, inverted, keys, children);
+        } else {
+          let child = simplify(tree[key], names.concat([key]),
+            !isAnd, inverted);
+          children.push(child);
+        }
         break;
+      }
     }
   }
   return { isAnd, keys, children };
