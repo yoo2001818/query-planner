@@ -11,9 +11,21 @@ function joinName(names) {
   return names.join('.');
 }
 
+function merge(dest, value) {
+  if (value.isAnd === dest.isAnd) {
+    dest.keys.push.apply(dest.keys, value.keys);
+    dest.children.push.apply(dest.children, value.children);
+  } else {
+    dest.children.push(value);
+  }
+}
+
 export default function simplify(
-  tree, names = [], isAnd = true, inverted = false, keys = [], children = [],
+  tree, names = [], isAnd = true, inverted = false,
 ) {
+  let keys = [];
+  let children = [];
+  let entry = { isAnd, keys, children };
   function addConstraint(names, range) {
     let nameStr = joinName(names);
     let rangeVal = inverted ? ranges.not(range) : range;
@@ -66,7 +78,7 @@ export default function simplify(
         // Thus, it needs to be OR, while being inverted.
         // This is applied to individual clauses too - everything needs to be
         // inverted.
-        children.push(simplify(tree[key], names, !isAnd, !inverted));
+        merge(entry, simplify(tree[key], names, !isAnd, !inverted));
         break;
       case '$nor':
         // !(A OR B).
@@ -76,7 +88,7 @@ export default function simplify(
         if (isAnd === !inverted) {
           // Merge keys and children
           tree[key].forEach(v => {
-            simplify(v, names, !inverted, inverted, keys, children);
+            merge(entry, simplify(v, names, !inverted, inverted));
           });
         } else {
           let newValue = {
@@ -85,10 +97,9 @@ export default function simplify(
             children: [],
           };
           tree[key].forEach(v => {
-            simplify(v, names, newValue.isAnd, inverted,
-              newValue.keys, newValue.children);
+            merge(newValue, simplify(v, names, newValue.isAnd, inverted));
           });
-          children.push(newValue);
+          merge(entry, newValue);
         }
         break;
       case '$or':
@@ -96,7 +107,8 @@ export default function simplify(
         if (isAnd === inverted) {
           // Merge keys and children
           tree[key].forEach(v => {
-            simplify(v, names, inverted, inverted, keys, children);
+            merge(entry,
+              simplify(v, names, inverted, inverted));
           });
         } else {
           let newValue = {
@@ -105,10 +117,9 @@ export default function simplify(
             children: [],
           };
           tree[key].forEach(v => {
-            simplify(v, names, newValue.isAnd, inverted,
-              newValue.keys, newValue.children);
+            merge(newValue, simplify(v, names, newValue.isAnd, inverted));
           });
-          children.push(newValue);
+          merge(entry, newValue);
         }
         break;
       case '$exists':
@@ -125,16 +136,15 @@ export default function simplify(
         // If current state is OR, or AND in inverted, we need to create new
         // child.
         if (isAnd !== inverted) {
-          simplify(tree[key], names.concat([key]),
-            isAnd, inverted, keys, children);
+          merge(entry, simplify(tree[key], names.concat([key]),
+            isAnd, inverted));
         } else {
-          let child = simplify(tree[key], names.concat([key]),
-            !isAnd, inverted);
-          children.push(child);
+          merge(entry, simplify(tree[key], names.concat([key]),
+            !isAnd, inverted));
         }
         break;
       }
     }
   }
-  return { isAnd, keys, children };
+  return entry;
 }
