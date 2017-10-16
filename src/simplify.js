@@ -11,9 +11,24 @@ function joinName(names) {
   return names.join('.');
 }
 
+function mergeKey(dest, name, value) {
+  let rangeVal = dest.inverted ? ranges.not(value) : value;
+  if (dest.keys[name] == null) {
+    dest.keys[name] = rangeVal;
+    return;
+  }
+  if (dest.isAnd) {
+    dest.keys[name] = ranges.and(dest.keys[name], rangeVal);
+  } else {
+    dest.keys[name] = ranges.or(dest.keys[name], rangeVal);
+  }
+}
+
 function merge(dest, value) {
   if (value.isAnd === dest.isAnd) {
-    dest.keys.push.apply(dest.keys, value.keys);
+    for (let key in value.keys) {
+      mergeKey(dest, key, value.keys[key]);
+    }
     dest.children.push.apply(dest.children, value.children);
   } else {
     dest.children.push(value);
@@ -23,29 +38,20 @@ function merge(dest, value) {
 export default function simplify(
   tree, names = [], isAnd = true, inverted = false,
 ) {
-  let keys = [];
+  let keys = {};
   let children = [];
-  let entry = { isAnd, keys, children };
+  let entry = { isAnd, keys, children, inverted };
   function addConstraint(names, range) {
     let nameStr = joinName(names);
-    let rangeVal = inverted ? ranges.not(range) : range;
-    if (keys[nameStr] == null) {
-      keys[nameStr] = rangeVal;
-      return;
-    }
-    if (isAnd) {
-      keys[nameStr] = ranges.and(keys[nameStr], rangeVal);
-    } else {
-      keys[nameStr] = ranges.or(keys[nameStr], rangeVal);
-    }
+    mergeKey(entry, nameStr, range);
   }
   if (Array.isArray(tree)) {
     addConstraint(names, ranges.eq(tree));
-    return { isAnd, keys, children };
+    return entry;
   }
   if (typeof tree !== 'object') {
     addConstraint(names, ranges.eq([tree]));
-    return { isAnd, keys, children };
+    return entry;
   }
   for (let key in tree) {
     switch (key) {
