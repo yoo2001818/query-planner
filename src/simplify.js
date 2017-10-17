@@ -98,6 +98,7 @@ export default function simplify(
           });
         } else {
           let newValue = {
+            inverted: inverted,
             isAnd: !inverted,
             keys: [],
             children: [],
@@ -118,6 +119,7 @@ export default function simplify(
           });
         } else {
           let newValue = {
+            inverted: inverted,
             isAnd: inverted,
             keys: [],
             children: [],
@@ -151,6 +153,9 @@ export default function simplify(
         break;
       }
     }
+  }
+  if (Object.keys(entry.keys).length === 0 && entry.children.length === 1) {
+    return entry.children[0];
   }
   return entry;
 }
