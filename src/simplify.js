@@ -12,15 +12,14 @@ function joinName(names) {
 }
 
 function mergeKey(dest, name, value) {
-  let rangeVal = dest.inverted ? ranges.not(value) : value;
   if (dest.keys[name] == null) {
-    dest.keys[name] = rangeVal;
+    dest.keys[name] = value;
     return;
   }
   if (dest.isAnd) {
-    dest.keys[name] = ranges.and(dest.keys[name], rangeVal);
+    dest.keys[name] = ranges.and(dest.keys[name], value);
   } else {
-    dest.keys[name] = ranges.or(dest.keys[name], rangeVal);
+    dest.keys[name] = ranges.or(dest.keys[name], value);
   }
 }
 
@@ -56,10 +55,10 @@ export default function simplify(
 ) {
   let keys = {};
   let children = [];
-  let entry = { isAnd, keys, children, inverted };
+  let entry = { isAnd, keys, children };
   function addConstraint(names, range) {
     let nameStr = joinName(names);
-    mergeKey(entry, nameStr, range);
+    mergeKey(entry, nameStr, inverted ? ranges.not(range) : range);
   }
   if (Array.isArray(tree)) {
     addConstraint(names, ranges.eq(tree));
@@ -114,9 +113,8 @@ export default function simplify(
           });
         } else {
           let newValue = {
-            inverted: inverted,
             isAnd: !inverted,
-            keys: [],
+            keys: {},
             children: [],
           };
           tree[key].forEach(v => {
@@ -135,9 +133,8 @@ export default function simplify(
           });
         } else {
           let newValue = {
-            inverted: inverted,
             isAnd: inverted,
-            keys: [],
+            keys: {},
             children: [],
           };
           tree[key].forEach(v => {
