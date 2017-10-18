@@ -38,4 +38,9 @@ describe('simplify', () => {
       },
     }), false, null));
   });
+  it('should merge redundant same keys', () => {
+    console.log(inspect(simplify({
+      $or: [{ a: 1, b: 5 }, { b: 6 }, { b: 7 }],
+    }), false, null));
+  });
 });

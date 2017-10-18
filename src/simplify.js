@@ -31,6 +31,22 @@ function merge(dest, value) {
     }
     dest.children.push.apply(dest.children, value.children);
   } else {
+    // If the children has only single key, merge it into current destination.
+    // Since AND query requires that all keys and children pass, and OR query
+    // requires one of the keys or children pass, there is no problem about it.
+    //
+    // We can further optimize the query by merging (A AND B) OR (A AND C) form
+    // to (B OR C) AND A. This can be expensive to implement.
+    if (value.children.length === 0) {
+      let keyNames = Object.keys(value.keys);
+      let len = keyNames.length;
+      if (len === 0) return;
+      if (len === 1) {
+        let keyName = keyNames[0];
+        mergeKey(dest, keyName, value.keys[keyName]);
+        return;
+      }
+    }
     dest.children.push(value);
   }
 }
@@ -104,7 +120,7 @@ export default function simplify(
             children: [],
           };
           tree[key].forEach(v => {
-            merge(newValue, simplify(v, names, newValue.isAnd, inverted));
+            merge(newValue, simplify(v, names, !inverted, inverted));
           });
           merge(entry, newValue);
         }
@@ -115,7 +131,7 @@ export default function simplify(
           // Merge keys and children
           tree[key].forEach(v => {
             merge(entry,
-              simplify(v, names, inverted, inverted));
+              simplify(v, names, !inverted, inverted));
           });
         } else {
           let newValue = {
@@ -125,7 +141,7 @@ export default function simplify(
             children: [],
           };
           tree[key].forEach(v => {
-            merge(newValue, simplify(v, names, newValue.isAnd, inverted));
+            merge(newValue, simplify(v, names, !inverted, inverted));
           });
           merge(entry, newValue);
         }
