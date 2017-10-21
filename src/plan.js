@@ -16,6 +16,11 @@ export default function plan(tree, sort, indexes) {
   // In case of OR, we have run union on all the queries. We can employ some
   // kind of dynamic programming - If two queries have same signature, we can
   // use same input and add a filter.
+  // Sometimes mutually exclusivity can be proved using the queries. In that
+  // case, the queries can be merged without any cost. This can be done by
+  // calculating max possible range of the keys and comparing each other - If
+  // both keys exist and there is no intersection at all, it's mutually
+  // exclusive. Except arrays.
   if (tree.isAnd) {
     // 1. Find and calculate costs for the keys.
     // 2. If suitable index was found, attach filter to it and exit.
@@ -27,4 +32,16 @@ export default function plan(tree, sort, indexes) {
     //    children uses full scan, just use full scan.
     // 3. Merge all the indexes and queries, attach union and exit.
   }
+}
+
+function createFilter(criteria) {
+  // Convert provided clause to filter's clause, which is a list of expressions
+  // that can easily be compiled to JS function.
+  // Or, it can be converted to an interval tree.
+  // It must return an array, which is the filter's clause.
+  // [ { name: 'a', value: 3 }, [ { name: 'b', value: 1 }, ... ] ].
+  // First depth is AND, and second depth is OR, third depth is AND, and so on.
+  // Thus, upper example should be a == 3 AND (b == 1 OR ...).
+  // value should be a range object, which is already used to construct the
+  // query.
 }
