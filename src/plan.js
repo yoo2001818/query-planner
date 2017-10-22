@@ -21,6 +21,7 @@ export default function plan(tree, sort, indexes) {
   // calculating max possible range of the keys and comparing each other - If
   // both keys exist and there is no intersection at all, it's mutually
   // exclusive. Except arrays.
+  return createFilter(tree);
   if (tree.isAnd) {
     // 1. Find and calculate costs for the keys.
     // 2. If suitable index was found, attach filter to it and exit.
@@ -34,7 +35,7 @@ export default function plan(tree, sort, indexes) {
   }
 }
 
-function createFilter(criteria) {
+function createFilter(criteria, wrapOr = true) {
   // Convert provided clause to filter's clause, which is a list of expressions
   // that can easily be compiled to JS function.
   // Or, it can be converted to an interval tree.
@@ -44,4 +45,16 @@ function createFilter(criteria) {
   // Thus, upper example should be a == 3 AND (b == 1 OR ...).
   // value should be a range object, which is already used to construct the
   // query.
+  // Filters can construct an interval tree a range's elements count is too
+  // high. Otherwise, it'd be better to stick to sequental comparing.
+  // Although, the code generation should be done by the user.
+  let output = [];
+  for (let key in criteria.keys) {
+    output.push({ name: key, value: criteria.keys[key] });
+  }
+  criteria.children.forEach(v => {
+    output.push(createFilter(v, false));
+  });
+  if (!criteria.isAnd && wrapOr) return [output];
+  return output;
 }
