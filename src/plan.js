@@ -21,7 +21,6 @@ export default function plan(tree, sort, indexes) {
   // calculating max possible range of the keys and comparing each other - If
   // both keys exist and there is no intersection at all, it's mutually
   // exclusive. Except arrays.
-  return createFilter(tree);
   if (tree.isAnd) {
     // 1. Find and calculate costs for the keys.
     // 2. If suitable index was found, attach filter to it and exit.
@@ -33,6 +32,28 @@ export default function plan(tree, sort, indexes) {
     //    children uses full scan, just use full scan.
     // 3. Merge all the indexes and queries, attach union and exit.
   }
+  // Bailout: if no index can be found, run a full scan.
+  return [
+    {
+      type: 'full',
+      config: {
+        jobs: [{
+          range: true,
+        }],
+      },
+    },
+    {
+      type: 'filter',
+      config: {
+        filter: createFilter(tree),
+      },
+      inputs: [0],
+    },
+    {
+      type: 'out',
+      inputs: [1],
+    },
+  ];
 }
 
 function createFilter(criteria, wrapOr = true) {
