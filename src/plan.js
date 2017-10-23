@@ -26,6 +26,7 @@ export default function plan(tree, sort, indexes) {
     // 2. If suitable index was found, attach filter to it and exit.
     // 3. Find and calculate costs for children.
     // 4. Use the children with lowest cost, attach filter to it and exit.
+    let selected = pickIndex(tree.keys, sort, indexes);
   } else {
     // 1. Find each key's index. If not found, use full scan.
     // 2. Traverse the children by recursively calling query planner. If the
@@ -54,6 +55,40 @@ export default function plan(tree, sort, indexes) {
       inputs: [1],
     },
   ];
+}
+
+function pickIndex(keys, sort, indexes) {
+  for (let i = 0; i < indexes.length; ++i) {
+    let index = indexes[i];
+
+  }
+}
+
+// Scores the index - returns a number that displays how much the index is
+// useful.
+function scoreIndex(keys, sort, index) {
+  // We have 'directly indexable' columns, 'inferred' columns, and 'sort'
+  // columns.
+  // Directly indexable columns are determined by the keys. First N keys can
+  // only have '=' range operators (or '!='), and a single key after the
+  // N keys can have any range operators (N >= 0). These keys can be used to
+  // directly load the required rows, hence 'directly indexable' columns.
+  // The columns right after that can be 'sort' columns. These columns are used
+  // to aid the sorting work.
+  // All other miscellaneous columns can be used to filter the rows before
+  // loading them from the 'master' table, which can improve the performance
+  // slightly.
+  // The priority will be judged by count of directly indexable columns,
+  // sort columns, and inferred columns.
+  //
+  // Phase represents the index usablity level.
+  // 0: Directly indexable, eq
+  // 1: Directly indexable, range
+  // 2: Sort
+  // 3: Inferred
+  let phase = 0;
+  for (let i = 0; i < index.length; ++i) {
+  }
 }
 
 function createFilter(criteria, wrapOr = true) {
