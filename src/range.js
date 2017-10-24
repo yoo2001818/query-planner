@@ -347,3 +347,7 @@ export function and(a, b) {
   }
   return output;
 }
+
+export function isAllEqual(query) {
+  return query.every(v => v.type === '=');
+}

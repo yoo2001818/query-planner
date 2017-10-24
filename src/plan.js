@@ -1,3 +1,5 @@
+import { isAllEqual } from './range';
+
 export default function plan(tree, sort, indexes) {
   // Traverse the tree in in-order.
   //
@@ -27,6 +29,7 @@ export default function plan(tree, sort, indexes) {
     // 3. Find and calculate costs for children.
     // 4. Use the children with lowest cost, attach filter to it and exit.
     let selected = pickIndex(tree.keys, sort, indexes);
+    console.log(selected);
   } else {
     // 1. Find each key's index. If not found, use full scan.
     // 2. Traverse the children by recursively calling query planner. If the
@@ -58,10 +61,17 @@ export default function plan(tree, sort, indexes) {
 }
 
 function pickIndex(keys, sort, indexes) {
+  let bestId = 0;
+  let bestScore = 0;
   for (let i = 0; i < indexes.length; ++i) {
     let index = indexes[i];
-
+    let score = scoreIndex(keys, sort, index);
+    if (bestScore < score) {
+      bestScore = score;
+      bestId = i;
+    }
   }
+  return indexes[bestId];
 }
 
 // Scores the index - returns a number that displays how much the index is
@@ -82,13 +92,37 @@ function scoreIndex(keys, sort, index) {
   // sort columns, and inferred columns.
   //
   // Phase represents the index usablity level.
-  // 0: Directly indexable, eq
-  // 1: Directly indexable, range
-  // 2: Sort
-  // 3: Inferred
+  // 0: Directly indexable
+  // 1: Sort
+  // 2: Inferred
+  let sortId = 0;
+  let score = 0;
   let phase = 0;
   for (let i = 0; i < index.length; ++i) {
+    let key = index[i];
+    if (phase === 0) {
+      if (keys[key] == null) {
+        phase = 1;
+      } else {
+        if (!isAllEqual(keys[key])) phase = 1;
+        score += 10000;
+      }
+      if (sort != null && sort[sortId] != null && sort[sortId][0] === key) {
+        sortId++;
+        score += 1000;
+      }
+      continue;
+    } else if (phase === 1) {
+      if (sort != null && sort[sortId] != null && sort[sortId][0] === key) {
+        sortId++;
+        score += 100;
+      } else {
+        phase = 2;
+      }
+    }
+    if (keys[key] != null) score += 1;
   }
+  return score;
 }
 
 function createFilter(criteria, wrapOr = true) {
