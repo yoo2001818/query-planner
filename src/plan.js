@@ -1,6 +1,6 @@
-import { isAllEqual } from './range';
+import * as ranges from './range';
 
-export default function plan(tree, sort, indexes) {
+export default function plan(tree, sort, indexes, merges) {
   // Traverse the tree in in-order.
   //
   // In case of AND, the keys act as constraint - that is, all the children can
@@ -24,17 +24,35 @@ export default function plan(tree, sort, indexes) {
   // both keys exist and there is no intersection at all, it's mutually
   // exclusive. Except arrays.
   if (tree.isAnd) {
+    // TODO Merge merges
     // 1. Find and calculate costs for the keys.
     // 2. If suitable index was found, attach filter to it and exit.
     // 3. Find and calculate costs for children.
     // 4. Use the children with lowest cost, attach filter to it and exit.
     let selected = pickIndex(tree.keys, sort, indexes);
+    // Calculate costs for children too. AND's children can use parent's
+    // conditions to optimize the query, so we should submit it too.
     console.log(selected);
   } else {
     // 1. Find each key's index. If not found, use full scan.
     // 2. Traverse the children by recursively calling query planner. If the
     //    children uses full scan, just use full scan.
     // 3. Merge all the indexes and queries, attach union and exit.
+    let plans = [];
+    let failed = false;
+    for (let key in tree.keys) {
+      let filter = mergeFilter({ [key]: tree.keys[key] }, merges);
+      // TODO Construct plan
+      let { index } = pickIndex(filter, sort, indexes);
+      if (index == null) {
+        failed = true;
+        break;
+      }
+      plans.push(index);
+    }
+    for (let i = 0; i < tree.children.length; ++i) {
+      
+    }
   }
   // Bailout: if no index can be found, run a full scan.
   return [
@@ -60,8 +78,18 @@ export default function plan(tree, sort, indexes) {
   ];
 }
 
+function mergeFilter(a, b) {
+  if (b == null) return a;
+  let output = Object.assign({}, a);
+  for (let key in b) {
+    if (output[key] != null) output[key] = ranges.and(a[key], b[key]);
+    else output[key] = b[key];
+  }
+  return output;
+}
+
 function pickIndex(keys, sort, indexes) {
-  let bestId = 0;
+  let bestId = -1;
   let bestScore = 0;
   for (let i = 0; i < indexes.length; ++i) {
     let index = indexes[i];
@@ -71,7 +99,7 @@ function pickIndex(keys, sort, indexes) {
       bestId = i;
     }
   }
-  return indexes[bestId];
+  return { index: indexes[bestId], score: bestScore };
 }
 
 // Scores the index - returns a number that displays how much the index is
@@ -104,7 +132,7 @@ function scoreIndex(keys, sort, index) {
       if (keys[key] == null) {
         phase = 1;
       } else {
-        if (!isAllEqual(keys[key])) phase = 1;
+        if (!ranges.isAllEqual(keys[key])) phase = 1;
         score += 10000;
       }
       if (sort != null && sort[sortId] != null && sort[sortId][0] === key) {
