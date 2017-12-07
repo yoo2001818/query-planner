@@ -33,6 +33,27 @@ export default function plan(tree, sort, indexes, merges) {
     // Calculate costs for children too. AND's children can use parent's
     // conditions to optimize the query, so we should submit it too.
     console.log(selected);
+    // Convert the tree to a job - extract lower / upper bound.
+    return [
+      {
+        type: 'index',
+        config: {
+          index: selected.index,
+          jobs: extractJobs(tree.keys, selected.index),
+        },
+      },
+      {
+        type: 'filter',
+        config: {
+          filter: createFilter(tree),
+        },
+        inputs: [0],
+      },
+      {
+        type: 'out',
+        inputs: [1],
+      },
+    ];
   } else {
     // 1. Find each key's index. If not found, use full scan.
     // 2. Traverse the children by recursively calling query planner. If the
@@ -175,4 +196,13 @@ function createFilter(criteria, wrapOr = true) {
   });
   if (!criteria.isAnd && wrapOr) return [output];
   return output;
+}
+
+// Traverse and extracts the index boundary.
+function extractJobs(keys, index) {
+  // This uses the same logic used to score the indices - instead, we create
+  // bunch of jobs to scan the whole index.
+  // This should use Cartesian product - below query should generate 27 jobs.
+  // A IN (1, 2, 3) AND B IN (1, 2, 3) AND C IN (1, 2, 3)
+  // a.b.c can be [1,1,1], [1,1,2], [1,1,3], ... [3,3,3].
 }
