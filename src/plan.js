@@ -205,4 +205,6 @@ function extractJobs(keys, index) {
   // This should use Cartesian product - below query should generate 27 jobs.
   // A IN (1, 2, 3) AND B IN (1, 2, 3) AND C IN (1, 2, 3)
   // a.b.c can be [1,1,1], [1,1,2], [1,1,3], ... [3,3,3].
+  // TODO: This shouldn't use cartesian product - it should be able to
+  // represent the query using nested loop!!!
 }
