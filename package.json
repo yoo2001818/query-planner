@@ -26,7 +26,8 @@
   },
   "homepage": "https://github.com/yoo2001818/query-planner#readme",
   "dependencies": {
-    "async-btree": "^1.0.6"
+    "async-btree": "^1.0.6",
+    "beatset": "^0.1.0"
   },
   "devDependencies": {
     "babel-core": "^6.25.0",
