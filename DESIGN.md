@@ -1,8 +1,6 @@
 # Designing a Query planner
 Query planner accepts a query and plans how should the database perform the
 query. This is really important for implementing RDBMSes.
-While the query planner doesn't support SQL yet, and only accepts MongoDB-like
-queries, RDBMS join support should be considered.
 
 Sure, query planners are cool, but how are we going to implement them?
 
@@ -16,12 +14,12 @@ index information, and metrics information, which is optional.
 The query planner should only consider columns having indexes first, then it
 can use additional filters to filter them.
 
-### MongoDB Query Language
-Query planner should support MongoDB query language as first-class.
-
 ### SQL
-SQL should be supported, but it should be converted to some kind of
-intermediate language - any kind of SQL AST would suffice.
+SQL is parsed by `yasqlp`, then its AST is processed directly.
+
+### MongoDB Query Language
+MongoDB Query Language should be converted to `yasqlp` compatiable AST, then
+it should be processed like SQL.
 
 ## Output data
 The query planner should output a list of 'pipes'. Each pipe accepts input, or
@@ -90,6 +88,76 @@ good idea to randomly partition the data and store them on separate buckets.
 
 That way, the computers only have to process the rows they know -
 A 'hypervisor' can merge them right away.
+
+## Single table querying
+For a single table, the criterias are simplified to multiple OR criterias that
+each one contains AND criterias.
+
+i.e. `SELECT * FROM a WHERE x IN (1, 2, 3) OR y IN (1, 2, 3) OR z IN (1, 2, 3)`
+will use Cartesian product if IN optimization is not available.
+
+This is done by representing each criteria using a bitset - so that a list of
+bitset will represent whole where clause.
+
+For example, the following SQL will be converted to bitset:
+
+`SELECT * FROM b WHERE ((x < 1 OR x < 2) AND b = 3) OR (c = 3)`
+
+|Clause|A  |B  |C  |
+|------|:-:|:-:|:-:|
+|x < 1 |O  |   |   |
+|x < 2 |   |O  |   |
+|b = 3 |O  |O  |   |
+|c = 3 |   |   |O  |
+
+Prior to that, a criteria implies another criteria are recorded, too.
+
+`x < 1 implies x < 2`
+
+By using these two information, `B` is eliminated since `A` completely contains
+it. (This is checked using `A AND B = B`)
+
+If same signature except = value differ exists, it can be changed to IN query.
+
+|Clause|A  |B  |C  |D  |
+|------|:-:|:-:|:-:|:-:|
+|x = 1 |O  |   |O  |   |
+|x = 2 |   |O  |   |O  |
+|b = 3 |O  |O  |   |   |
+|b = 4 |   |   |O  |O  |
+
+This can be converted to:
+
+|Clause|A  |B  |
+|------|:-:|:-:|
+|x IN (1, 2)|O  |O  |
+|b = 3 |O  |   |
+|b = 4 |   |O  |
+
+After cleansing the information, the best index will be chosen for each
+criteria and they'll be merged.
+
+We can also do bitmap scan for this, however, it won't be implemented for now.
+
+### Bitmap scan
+Each index can be scanned and they can be stored as a bitmap to query multiple
+criterias really fast. Query planner should faciliate this.
+
+## Joining
+When joining, cost for fetching each edge, and each table should be calculated
+and the cost data should be used to calculate final path.
+
+But how do we calculate the cost of the join, and perform them?
+
+### Sort-Merge Join
+Usually sort-merge join has terrible performance, since the indexes has to be
+sorted. But if two indexes are sorted, it's the quickest way to join the table.
+
+### Hash Join
+
+### Nested Join
+
+**BELOW DETAILS ARE DEPRECATED AND WILL BE REMOVED**
 
 ## Case 1. Single table
 If the query is only composed of ANDs, it's really simple - 
