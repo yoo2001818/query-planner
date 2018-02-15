@@ -143,6 +143,9 @@ We can also do bitmap scan for this, however, it won't be implemented for now.
 Each index can be scanned and they can be stored as a bitmap to query multiple
 criterias really fast. Query planner should faciliate this.
 
+However, since bitmap scan requires full scan of each index, it might be
+undesirable if limit / offset is specified.
+
 ## Joining
 When joining, cost for fetching each edge, and each table should be calculated
 and the cost data should be used to calculate final path.
@@ -154,8 +157,18 @@ Usually sort-merge join has terrible performance, since the indexes has to be
 sorted. But if two indexes are sorted, it's the quickest way to join the table.
 
 ### Hash Join
+Hash join can be used for general purpose (at least in ORM relations),
+and it's relatively fast if one side of table can be stored in the RAM.
 
 ### Nested Join
+Nested join is slow, but it can handle all cases.
+
+## Aggregation
+
+## Sorting
+Sorting should be avoided for many cases since it makes a query really slow.
+
+## Limiting
 
 **BELOW DETAILS ARE DEPRECATED AND WILL BE REMOVED**
 
