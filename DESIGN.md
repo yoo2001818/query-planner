@@ -152,6 +152,8 @@ and the cost data should be used to calculate final path.
 
 But how do we calculate the cost of the join, and perform them?
 
+We select common columns specified in the clauses, and compare them.
+
 ### Sort-Merge Join
 Usually sort-merge join has terrible performance, since the indexes has to be
 sorted. But if two indexes are sorted, it's the quickest way to join the table.
@@ -164,11 +166,23 @@ and it's relatively fast if one side of table can be stored in the RAM.
 Nested join is slow, but it can handle all cases.
 
 ## Aggregation
+Aggregation should be done in last level - since everything has to be read,
+sorting / limiting is not applicable, but it can be sorted to group by columns,
+which is really helpful - it should try to sort the columns without explicit
+sorting first. Then, it should use hash join for aggregation.
+
+Aggregation can be various, however, nothing changes the fact that every
+row has to be scanned.
 
 ## Sorting
 Sorting should be avoided for many cases since it makes a query really slow.
 
+It should use quicksort for primary sorting method.
+
 ## Limiting
+If sorting is required and limit is specified, we can use quick select
+algorithm to limit the searching. However, this is not possible if bitmap scan
+is required.
 
 **BELOW DETAILS ARE DEPRECATED AND WILL BE REMOVED**
 
