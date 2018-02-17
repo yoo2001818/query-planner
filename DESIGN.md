@@ -154,6 +154,18 @@ But how do we calculate the cost of the join, and perform them?
 
 We select common columns specified in the clauses, and compare them.
 
+Each join's cost is calculated by the size of index, whether if an index is
+available, etc. It can also use histograms to approximate cost.
+
+Judging by the index, sort-merge, hash, nested join will be used.
+
+Sort-merge can be used if it doesn't require sorting in other types, and
+filtering isn't really necessary.
+
+Hash join should be used if a whole table can stored in RAM.
+
+Nested join is slowest - thus it should be avoided.
+
 ### Sort-Merge Join
 Usually sort-merge join has terrible performance, since the indexes has to be
 sorted. But if two indexes are sorted, it's the quickest way to join the table.
