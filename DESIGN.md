@@ -22,64 +22,58 @@ MongoDB Query Language should be converted to `yasqlp` compatiable AST, then
 it should be processed like SQL.
 
 ## Output data
-The query planner should output a list of 'pipes'. Each pipe accepts input, or
-reads the database, and outputs data. Each pipes are connected to other pipe.
+The query planner should output a list of tasks. Each task accepts input, or
+reads the database, and output data. Each tasks are connected to other task.
 
-Pipe network makes a directed acyclic graph, which can be run on distributed
-systems, too.
+Task network makes a directed acyclic graph, which can be run on distributed
+systems, too, if order doesn't matter.
 
-### Pipe types
-Pipes have three kinds of types: input, process, output.
+### Task types
+Task can be one of these types:
 
-#### Input
-Input pipe reads and process jobs from input, or provided constant value,
-simultaneously if possible.
+- Scan
+  - Full scan
+  - Index scan
+  - Bitmap scan
+  - Constant value
+- Filter
+- Sort
+- Limit
+- Join
+  - Merge join
+  - Hash join
+  - Nested loop join
+- Union
 
-Each job can be a range, or a list of IDs, and can have a 'reverse' flag to
-reverse the results. A pipe runs inserted jobs simultaneously, which means that
-it returns jobs at random order, but each job will be correctly ordered.
+#### Scan
+Scan task reads and process jobs from input, or provides constant value.
 
-Each job can have additional props too - it can be used while doing table join,
-etc.
+It can contain clause information related to the index, which is used to scan
+the table. However, anything unrelated is strictly not allowed.
 
-`full` returns full document values, and `index` only returns partital documents
-reconstructed from tuples.
-So, in order to load the full document from the index, two inputs must be used.
+The query planner should be responsible for clause information generation -
+it should generate appropriate 2D bitset for the index.
 
-- full - Accepts a list of operators.
-- index - Accepts a list of operators.
+Index scan should be provided a single index, and a direction for scanning.
 
-##### Jobs
-Each job can be an array, or an object. If an array is provided, that array's
-contents are mapped to index's keys. If an object is provided, object's keys
-are mapped to index's keys.
+Bitmap scan should be provided a main index, list of indexes, and direction
+for main index.
 
-Jobs can additionally have `__meta__` property to store the additional
-metadata. (Applicable for objects) These data will be included to the output
-job, so it can be used to join two tables.
+Full scan can be specified with a direction, but this is pretty meaningless.
 
-After the job is completed, the pipe sends 'job terminator' if instructed to do
-so. Underlying pipes should clean up the job then. Job terminator is marked
-with `__complete__`.
+#### Filter
+Filter task filters the rows, and outputs them right away.
 
-###### Range
+#### Sort
+Sort task sorts the rows. If limit is not specified, it'll perform a quicksort.
+But if limit is specified, it'll perform quickselect for better performance.
 
-```js
-{ low: true, lowValue: 5, lowEqual: true, high: false, highValue: 6, highEqual: false }
-```
+#### Limit
+Limit task limits / offsets the rows.
 
-###### Exact
+#### Join
 
-###### Load
-
-#### Process
-- filter
-- sort
-- union
-- map
-
-#### Output
-- out
+#### Union
 
 ## Parallel processing
 If the database uses distributed parallel computing (That is, queries are
@@ -176,6 +170,13 @@ and it's relatively fast if one side of table can be stored in the RAM.
 
 ### Nested Join
 Nested join is slow, but it can handle all cases.
+
+## Subqueries
+Subqueries can be considered as a special type of join.
+
+If subquery is inside SELECT clause, it can be considered as a regular join.
+Otherwise, it can be joined, then removed right away - a 'temporary' column
+can be made.
 
 ## Aggregation
 Aggregation should be done in last level - since everything has to be read,
