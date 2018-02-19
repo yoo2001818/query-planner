@@ -72,8 +72,19 @@ But if limit is specified, it'll perform quickselect for better performance.
 Limit task limits / offsets the rows.
 
 #### Join
+Join task accepts two inputs - the first one is main, and second one is
+'smaller' one - and joins them. Clause information must be
+provided.
+
+Query planner should select which index to use, and those indexes will be
+used for joining.
+
+Hash join may take a while to initialize while generating hashmap - but it
+can be cacheable - the execution engine should utilize this.
 
 #### Union
+There is two types of union - union all and union. Both outputs rows in
+desired order, but union checkes for conflicts using a hashmap.
 
 ## Parallel processing
 If the database uses distributed parallel computing (That is, queries are
