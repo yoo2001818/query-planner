@@ -28,7 +28,8 @@
   "dependencies": {
     "async-btree": "^1.0.6",
     "beatset": "^0.1.0",
-    "yasqlp": "^0.1.0"
+    "bitset": "^4.1.0",
+    "yasqlp": "^0.1.1"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",

@@ -7,7 +7,7 @@ function clauseFromSQL(query) {
 
 function getArrayResult(query) {
   let result = clauseFromSQL(query);
-  return { clauses: result.clauses, bitmap: Array.from(result.iterator) };
+  return { clauses: result.clauses, bitmap: Array.from(result.iterator || []) };
 }
 
 describe('makeClauseTable', () => {
@@ -18,6 +18,7 @@ describe('makeClauseTable', () => {
         op: '=',
         left: { type: 'column', table: null, name: 'a' },
         right: { type: 'string', value: '1' },
+        index: 0,
       }],
       bitmap: [1],
     });
@@ -29,11 +30,13 @@ describe('makeClauseTable', () => {
         op: '=',
         left: { type: 'column', table: null, name: 'a' },
         right: { type: 'string', value: '1' },
+        index: 0,
       }, {
         type: 'compare',
         op: '=',
         left: { type: 'column', table: null, name: 'b' },
         right: { type: 'number', value: 3 },
+        index: 1,
       }],
       bitmap: [3],
     });
@@ -45,11 +48,13 @@ describe('makeClauseTable', () => {
         op: '=',
         left: { type: 'column', table: null, name: 'a' },
         right: { type: 'string', value: '1' },
+        index: 0,
       }, {
         type: 'compare',
         op: '=',
         left: { type: 'column', table: null, name: 'b' },
         right: { type: 'number', value: 3 },
+        index: 1,
       }],
       bitmap: [1, 2],
     });
