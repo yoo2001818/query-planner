@@ -9,6 +9,9 @@ export default function makeClauseTable(where) {
     clauses.push(self);
     return self;
   });
+  // Create a generator for where clause - it should generate all possible
+  // sets for the clause.
+  // It should start by marking all ORs, and running them.
   return { clauses };
 }
 
