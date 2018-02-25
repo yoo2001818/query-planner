@@ -12,25 +12,22 @@ export default function makeClauseTable(where) {
   // Create a generator for where clause - it should generate all possible
   // sets for the clause.
   // It should start by marking all ORs, and running them.
-  let result = [];
-  result.push(generateBitsets(where, 0, result));
-  console.log(result);
-  return { clauses };
+  let bitmap = generateBitsets(indexedWhere);
+  console.log(bitmap);
+  return { clauses, iterator: bitmap };
 }
 
-function generateBitsets(where, current = 0, output = []) {
+function generateBitsets(where) {
   if (where.type === 'logical') {
     if (where.op === '||') {
-      return where.values.forEach((v) => {
-        output.push(generateBitsets(v, current, output));
-      });
+      return where.values.reduce((p, v) => p.concat(generateBitsets(v)), []);
     } else if (where.op === '&&') {
-      return where.values.reduce((p, v) => {
-        return generateBitsets(v, p, output);
-      }, current);
+      return [where.values.reduce((p, v) => {
+        return p | generateBitsets(v);
+      }, 0)];
     }
   }
-  return current | where.index;
+  return [1 << where.index];
 }
 
 function traverseClauses(where, callback) {
