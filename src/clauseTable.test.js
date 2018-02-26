@@ -59,4 +59,36 @@ describe('makeClauseTable', () => {
       bitmap: [1, 2],
     });
   });
+  it('should handle compound expression', () => {
+    expect(getArrayResult('SELECT * WHERE (a = \'1\' OR b = 3) AND ' +
+      '(a = \'2\' OR b = 4);')
+    ).toEqual({
+      clauses: [{
+        type: 'compare',
+        op: '=',
+        left: { type: 'column', table: null, name: 'a' },
+        right: { type: 'string', value: '1' },
+        index: 0,
+      }, {
+        type: 'compare',
+        op: '=',
+        left: { type: 'column', table: null, name: 'b' },
+        right: { type: 'number', value: 3 },
+        index: 1,
+      }, {
+        type: 'compare',
+        op: '=',
+        left: { type: 'column', table: null, name: 'a' },
+        right: { type: 'string', value: '2' },
+        index: 2,
+      }, {
+        type: 'compare',
+        op: '=',
+        left: { type: 'column', table: null, name: 'b' },
+        right: { type: 'number', value: 4 },
+        index: 3,
+      }],
+      bitmap: [1 | 4, 2 | 8, 1 | 4, 2 | 8],
+    });
+  });
 });
