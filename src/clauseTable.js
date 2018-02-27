@@ -22,9 +22,18 @@ function generateBitsets(where) {
     if (where.op === '||') {
       return where.values.reduce((p, v) => p.concat(generateBitsets(v)), []);
     } else if (where.op === '&&') {
-      return [where.values.reduce((p, v) => {
-        return p | generateBitsets(v);
-      }, 0)];
+      // Perform a cartesian product between values
+      return where.values.reduce((p, v) => {
+        const currentResult = generateBitsets(v);
+        if (p.length === 0) return currentResult;
+        let output = [];
+        for (let i = 0; i < p.length; ++i) {
+          for (let j = 0; j < currentResult.length; ++j) {
+            output.push(p[i] | currentResult[j]);
+          }
+        }
+        return output;
+      }, []);
     }
   }
   return [1 << where.index];
