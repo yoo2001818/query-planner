@@ -88,7 +88,7 @@ describe('makeClauseTable', () => {
         right: { type: 'number', value: 4 },
         index: 3,
       }],
-      bitmap: [1 | 4, 1 | 8, 2 | 4,  2| 8],
+      bitmap: [1 | 4, 1 | 8, 2 | 4, 2 | 8],
     });
   });
 });
