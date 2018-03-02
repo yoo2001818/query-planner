@@ -18,6 +18,7 @@ describe('makeClauseTable', () => {
         op: '=',
         left: { type: 'column', table: null, name: 'a' },
         right: { type: 'string', value: '1' },
+        index: 0,
       }],
       bitmap: [1],
     });
@@ -29,11 +30,13 @@ describe('makeClauseTable', () => {
         op: '=',
         left: { type: 'column', table: null, name: 'a' },
         right: { type: 'string', value: '1' },
+        index: 0,
       }, {
         type: 'compare',
         op: '=',
         left: { type: 'column', table: null, name: 'b' },
         right: { type: 'number', value: 3 },
+        index: 1,
       }],
       bitmap: [3],
     });
@@ -45,11 +48,13 @@ describe('makeClauseTable', () => {
         op: '=',
         left: { type: 'column', table: null, name: 'a' },
         right: { type: 'string', value: '1' },
+        index: 0,
       }, {
         type: 'compare',
         op: '=',
         left: { type: 'column', table: null, name: 'b' },
         right: { type: 'number', value: 3 },
+        index: 1,
       }],
       bitmap: [1, 2],
     });
@@ -63,21 +68,25 @@ describe('makeClauseTable', () => {
         op: '=',
         left: { type: 'column', table: null, name: 'a' },
         right: { type: 'string', value: '1' },
+        index: 0,
       }, {
         type: 'compare',
         op: '=',
         left: { type: 'column', table: null, name: 'b' },
         right: { type: 'number', value: 3 },
+        index: 1,
       }, {
         type: 'compare',
         op: '=',
         left: { type: 'column', table: null, name: 'a' },
         right: { type: 'string', value: '2' },
+        index: 2,
       }, {
         type: 'compare',
         op: '=',
         left: { type: 'column', table: null, name: 'b' },
         right: { type: 'number', value: 4 },
+        index: 3,
       }],
       bitmap: [1 | 4, 1 | 8, 2 | 4, 2 | 8],
     });
