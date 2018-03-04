@@ -95,6 +95,48 @@ That way, the computers only have to process the rows they know -
 A 'hypervisor' can merge them right away.
 
 ## Single table querying
+
+### Simplification
+We need to use extensive boolean algebra in order to generate simplified query.
+#### Removing NOT
+NOT can be elliminated by switching OR/AND with each other and inverting the
+predicates.
+
+`NOT(A OR B) = !A AND !B`
+#### Removing IN
+Since IN can be generalized from `x IN (1, 2, 3, 4)` to list of ORs,
+thus it should be generalized.
+
+#### Removing BETWEEN
+BETWEEN can be generalized too, from `x BETWEEN 5 AND 10` to
+`x >= 5 AND x <= 10`.
+
+#### Removing CASE
+CASE can be generalized too, albeit being slightly weird.
+
+`CASE WHEN x = 1 THEN y WHEN x = 2 THEN z ELSE 3 END` can be converted to
+`(x = 1 AND y) OR (NOT(x = 1) AND x = 2 AND z) OR (NOT(...) AND NOT(...) AND 3)`
+Yes, it's weird but it works!
+
+#### Combining nested operators
+If same operators are nested, they should be unwinded to simplify the query.
+
+`a AND (b AND c)` should be converted to `a AND b AND c`.
+
+#### Removing implied / unnecessary operators
+By embracing boolean algebras, and rules of replacement,
+these can be simplfied as well:
+
+- `a > 3 AND a > 5` can be converted to `a > 5`.
+- `a > 3 OR a > 5` can be converted to `a > 3`.
+- `(a > 5 AND b = 1) OR (a > 3 AND b = 1)` can be converted to
+  `b = 1 AND (a > 3 OR a > 5)`... which can be converted to
+  `b = 1 AND a > 3`.
+
+### Index selection
+After simplifying the predicates, the indexes should be selected using
+their histograms / expected number of rows, etc.
+
 For a single table, the criterias are simplified to multiple OR criterias that
 each one contains AND criterias.
 
