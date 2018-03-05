@@ -137,6 +137,30 @@ these can be simplfied as well:
 After simplifying the predicates, the indexes should be selected using
 their histograms / expected number of rows, etc.
 
+Basically, we separate what can be selected from the clauses first - then
+estimate the result size of each index, if that index can be used against
+the query.
+
+However, only one index can be not enough, if OR is used so other criterias have
+to be scanned too. We can use UNION, or bitmap scan in that case.
+
+- `a = 1 OR a = 2` is enough to be scanned by one index.
+- `a = 1 AND b = 1` too.
+- `a = 1 OR b = 1` can't be scanned by one index - we use bitmap scan.
+
+Since bitmap scan can use multiple indexes at the same time, it should be
+preferred if both indexes are expected to return many rows.
+
+Bitmap index can be used for AND, and ORs. Since all NOTs are removed in
+previous stage, it can be used for both queries.
+
+However, it should be noted that bitmap scan AND is quite useless -
+an index with smaller expected rows should be used, then other criterias
+should be compared with it.
+
+Bitmap scan OR, on the other hand, is quite useful - it can efficiently merge
+two criterias without too much overhead - O(n+m).
+
 For a single table, the criterias are simplified to multiple OR criterias that
 each one contains AND criterias.
 
