@@ -132,6 +132,28 @@ these can be simplfied as well:
 - `(a > 5 AND b = 1) OR (a > 3 AND b = 1)` can be converted to
   `b = 1 AND (a > 3 OR a > 5)`... which can be converted to
   `b = 1 AND a > 3`.
+- `(a > 5 OR b = 1) AND (a > 3 OR b = 1) AND c = 1` should be converted to...
+  `(b = 1 AND a > 3) AND c = 1` 
+- `(a = 1 OR b = 1) AND (a = 1 OR b = 1)` should be merged to one.
+
+##### Algorithm
+Surely this is the most important logic of query simplification; yet this is
+quite complicated.
+
+1. Elimination by distributive property - `(a AND b) OR (a AND c)` should be
+   `a AND (b OR c)`.
+   This should be implemented using hash code - a should be converted to
+   a string, and it should be compared with other nodes.
+   Finding the same node should be one level deep - it won't matter if
+   other nodes exist in other level.
+2. Removing implied / same operators - `a > 3 AND a > 5` should be `a > 5`.
+   This requires a simple comparison code - we simply remove one that isn't
+   necessary.
+3. Expanding nested operators - 
+   `(a AND (b OR c)) OR (b AND c)` can be expanded to
+   `(b AND a) OR (c AND a) OR (b AND C)`.
+   It should be carefully tested since it might not have an actual benefit yet
+   it performs a Cartesian product which is prohibitively expensive.
 
 ### Index selection
 After simplifying the predicates, the indexes should be selected using
@@ -160,6 +182,21 @@ should be compared with it.
 
 Bitmap scan OR, on the other hand, is quite useful - it can efficiently merge
 two criterias without too much overhead - O(n+m).
+
+#### Extracting columns to load by index
+In order to get estimated output for index, we have to actually create
+clauses to load indices.
+
+Suppose there is an index with column order `a b c d` - `a`, `b`, `c` can be
+used only for EQUAL - `d` can be used for range queries. Note that lower
+columns, i.e. `d` can be used only if all `a`, `b`, `c` column is present
+in the clause.
+
+Keeping this in mind, we extract a list of predicates from the where clause.
+
+- `a = 1 AND d > 3 AND d < 5` can be converted to `a: 1, d: >3 <5`.
+- `d > 3 OR d < 5`.... should be eliminated by simplication, so it's not valid.
+- `b > 5 ` can be converted to `a: 1, d: >3 <5`.
 
 For a single table, the criterias are simplified to multiple OR criterias that
 each one contains AND criterias.
