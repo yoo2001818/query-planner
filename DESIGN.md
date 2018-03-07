@@ -193,10 +193,24 @@ columns, i.e. `d` can be used only if all `a`, `b`, `c` column is present
 in the clause.
 
 Keeping this in mind, we extract a list of predicates from the where clause.
+While selected clauses are used to load indices, however, there might be
+'leftover' clauses that needs additional filtering, or 'unresolvable' clauses
+that is not possible to load with the index.
+
+If all indices have 'unresolvable' clauses, the query planner should use
+bitmap OR - or it should use full scan.
 
 - `a = 1 AND d > 3 AND d < 5` can be converted to `a: 1, d: >3 <5`.
 - `d > 3 OR d < 5`.... should be eliminated by simplication, so it's not valid.
-- `b > 5 ` can be converted to `a: 1, d: >3 <5`.
+- `b > 5 OR (c = 1 AND d = 2)` can be converted to `b: >5` OR `c: 1, d: 2` -
+  It cannot be satisfied by one index. Thus it should use bitmap OR.
+
+#### Sorting
+Since all indexes are evaluated, we can automatically? detect the index
+that doesn't require sorting - if bottom index isn't sorted, we perform a
+filesort.
+
+
 
 For a single table, the criterias are simplified to multiple OR criterias that
 each one contains AND criterias.
