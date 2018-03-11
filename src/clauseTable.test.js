@@ -91,20 +91,4 @@ describe('makeClauseTable', () => {
       bitmap: [1 | 4, 1 | 8, 2 | 4, 2 | 8],
     });
   });
-  it('should handle compound expression', () => {
-    expect(getArrayResult('SELECT * WHERE ' +
-      '(a = 1 OR b = 2 OR c = 3 OR d = 4) AND ' +
-      '(a = 1 OR b = 2 OR c = 3 OR d = 4) AND ' +
-      '(a = 1 OR b = 2 OR c = 3 OR d = 4) AND ' +
-      '(a = 1 OR b = 2 OR c = 3 OR d = 4) AND ' +
-      '(a = 1 OR b = 2 OR c = 3 OR d = 4) AND ' +
-      '(a = 1 OR b = 2 OR c = 3 OR d = 4) AND ' +
-      '(a = 1 OR b = 2 OR c = 3 OR d = 4) AND ' +
-      '(a = 1 OR b = 2 OR c = 3 OR d = 4) AND ' +
-      '(a = 1 OR b = 2 OR c = 3 OR d = 4) AND ' +
-      '(a = 1 OR b = 2 OR c = 3 OR d = 4) AND ' +
-      '(a = 1 OR b = 2 OR c = 3 OR d = 4) AND ' +
-      '(a = 1 OR b = 2 OR c = 3 OR d = 4);'
-    )).toEqual({});
-  });
 });
