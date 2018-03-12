@@ -44,12 +44,16 @@ describe('simplify', () => {
   it('should simplify between expression', () => {
     expect(simplify(getAST('SELECT * WHERE a BETWEEN 1 AND 2;')))
       .toEqual(getAST('SELECT * WHERE a >= 1 AND a <= 2;'));
+  });
+  it('should simplify not between expression', () => {
     expect(simplify(getAST('SELECT * WHERE a NOT BETWEEN 1 AND 2;')))
       .toEqual(getAST('SELECT * WHERE a < 1 OR a > 2;'));
   });
   it('should simplify in expression', () => {
     expect(simplify(getAST('SELECT * WHERE a IN (1, 2, 3);')))
       .toEqual(getAST('SELECT * WHERE a = 1 OR a = 2 OR a = 3;'));
+  });
+  it('should simplify not in expression', () => {
     expect(simplify(getAST('SELECT * WHERE a NOT IN (1, 2, 3);')))
       .toEqual(getAST('SELECT * WHERE a != 1 AND a != 2 AND a != 3;'));
   });
