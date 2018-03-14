@@ -1,11 +1,21 @@
 import * as ranges from './range';
 
+const compareInvertOp = {
+  '>=': '<',
+  '<=': '>',
+  '>': '<=',
+  '<': '>=',
+  '=': '!=',
+  '!=': '=',
+};
+
 // Returns simplified AST of where clause.
-export default function simplify(input) {
+export default function simplify(input, inverted = false) {
   // The simplify method is required to traverse the AST, using recursion.
   // Remove NOT
-  // Remove IN
-  if (input.type === 'in') {
+  if (input.type === 'unary' && input.op === '!') {
+    return simplify(input.value, !inverted);
+  } else if (input.type === 'in') {
     return simplify({
       type: 'logical',
       op: '||',
@@ -16,7 +26,7 @@ export default function simplify(input) {
         left: input.target,
         right: v,
       })),
-    });
+    }, inverted);
   } else if (input.type === 'between') {
     return simplify({
       type: 'logical',
@@ -32,9 +42,8 @@ export default function simplify(input) {
         left: input.target,
         right: input.max,
       }],
-    });
+    }, inverted);
   } else if (input.type === 'case') {
-    console.log(input);
     let notTable = [];
     let result = [];
     for (let match of input.matches) {
@@ -66,10 +75,18 @@ export default function simplify(input) {
       type: 'logical',
       op: '||',
       values: result,
+    }, inverted);
+  } else if (input.type === 'logical') {
+    // TODO Combine nested operators
+    return Object.assign({}, input, {
+      op: (input.op === '||') === inverted ? '&&' : '||',
+      values: input.values.map(v => simplify(v, inverted)),
+    });
+  } else if (inverted && input.type === 'compare') {
+    return Object.assign({}, input, {
+      op: compareInvertOp[input.op],
     });
   }
-  // Remove CASE
-  // Combine nested operators
   // Remove implied / unnecesary operators. Simplify again if necessary.
   return input;
 }
