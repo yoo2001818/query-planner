@@ -77,11 +77,17 @@ export default function simplify(input, inverted = false) {
       values: result,
     }, inverted);
   } else if (input.type === 'logical') {
-    // TODO Combine nested operators
-    return Object.assign({}, input, {
-      op: (input.op === '||') === inverted ? '&&' : '||',
-      values: input.values.map(v => simplify(v, inverted)),
-    });
+    let op = (input.op === '||') === inverted ? '&&' : '||';
+    let values = [];
+    for (let i = 0; i < input.values.length; ++i) {
+      let value = simplify(input.values[i], inverted);
+      if (value.type === 'logical' && value.op === op) {
+        values = values.concat(value.values);
+      } else {
+        values.push(value);
+      }
+    }
+    return Object.assign({}, input, { op, values });
   } else if (inverted && input.type === 'compare') {
     return Object.assign({}, input, {
       op: compareInvertOp[input.op],
