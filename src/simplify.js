@@ -87,6 +87,10 @@ export default function simplify(input, inverted = false) {
         values.push(value);
       }
     }
+    // Remove unnecessary statements from logical operator; This is done by
+    // storing all the operators grouped by each left type, and checking if
+    // any other operator already contains it.
+    let ranges = {};
     return Object.assign({}, input, { op, values });
   } else if (inverted && input.type === 'compare') {
     return Object.assign({}, input, {
