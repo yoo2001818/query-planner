@@ -9,6 +9,24 @@ const compareInvertOp = {
   '!=': '=',
 };
 
+function createRange(input) {
+  if (input.type !== 'compare') return;
+  switch (input.op) {
+    case '=':
+      return ranges.eq(input.right.value);
+    case '!=':
+      return ranges.neq(input.right.value);
+    case '<':
+      return ranges.lt(input.right.value);
+    case '>':
+      return ranges.gt(input.right.value);
+    case '<=':
+      return ranges.lt(input.right.value, true);
+    case '>=':
+      return ranges.gt(input.right.value, true);
+  }
+}
+
 // Returns simplified AST of where clause.
 export default function simplify(input, inverted = false) {
   // The simplify method is required to traverse the AST, using recursion.
