@@ -1,4 +1,5 @@
 import * as ranges from './range';
+import deepEqual from 'deep-equal';
 
 const compareInvertOp = {
   '>=': '<',
@@ -13,9 +14,9 @@ function createRange(input) {
   if (input.type !== 'compare') return;
   switch (input.op) {
     case '=':
-      return ranges.eq(input.right.value);
+      return ranges.eq([input.right.value]);
     case '!=':
-      return ranges.neq(input.right.value);
+      return ranges.neq([input.right.value]);
     case '<':
       return ranges.lt(input.right.value);
     case '>':
@@ -108,7 +109,29 @@ export default function simplify(input, inverted = false) {
     // Remove unnecessary statements from logical operator; This is done by
     // storing all the operators grouped by each left type, and checking if
     // any other operator already contains it.
-    let ranges = {};
+    let columns = {};
+    values = values.filter(value => {
+      console.log(value);
+      if (value.type !== 'compare' || value.left.type !== 'column') {
+        return true;
+      }
+      let name = value.left.value;
+      let range = createRange(value);
+      if (columns[name] == null) columns[name] = [];
+      // Check if the range contains the operator.
+      let result;
+      if (input.op === '||') {
+        result = ranges.or(columns[name], range);
+      } else {
+        result = ranges.and(columns[name], range);
+      }
+      console.log(result);
+      // Since there is no method of checking if the range contains the op,
+      // we check if input and output are both same.
+      if (deepEqual(result, columns[name])) return false;
+      columns[name] = result;
+      return true;
+    });
     return Object.assign({}, input, { op, values });
   } else if (inverted && input.type === 'compare') {
     return Object.assign({}, input, {
