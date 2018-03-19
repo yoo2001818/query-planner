@@ -106,32 +106,44 @@ export default function simplify(input, inverted = false) {
         values.push(value);
       }
     }
-    // Remove unnecessary statements from logical operator; This is done by
-    // storing all the operators grouped by each left type, and checking if
-    // any other operator already contains it.
+    // Remove unnecessary statements from logical operator; Store all the
+    // predicates onto the range object, then rebuild the tree to contain
+    // only allowed types.
+    // Basically, we flush every compare operators - then rebuild it later.
     let columns = {};
     values = values.filter(value => {
-      console.log(value);
       if (value.type !== 'compare' || value.left.type !== 'column') {
         return true;
       }
-      let name = value.left.value;
+      let name = value.left.table + '.' + value.left.name;
       let range = createRange(value);
-      if (columns[name] == null) columns[name] = [];
       // Check if the range contains the operator.
-      let result;
-      if (input.op === '||') {
-        result = ranges.or(columns[name], range);
+      if (columns[name] != null) {
+        if (op === '||') {
+          columns[name].value = ranges.or(columns[name].value, range);
+        } else {
+          columns[name].value = ranges.and(columns[name].value, range);
+        }
       } else {
-        result = ranges.and(columns[name], range);
+        columns[name] = { key: value.left, value: range };
       }
-      console.log(result);
-      // Since there is no method of checking if the range contains the op,
-      // we check if input and output are both same.
-      if (deepEqual(result, columns[name])) return false;
-      columns[name] = result;
-      return true;
+      return false;
     });
+    for (let key in columns) {
+      let entry = columns[key];
+      entry.value.forEach(v => {
+        let op = v.type;
+        if (op === '<' && v.equal) op = '<=';
+        if (op === '>' && v.equal) op = '>=';
+        values.push({
+          type: 'compare',
+          op,
+          left: entry.key,
+          right: { type: 'number', value: v.value },
+        });
+      });
+    }
+    console.log(columns);
     return Object.assign({}, input, { op, values });
   } else if (inverted && input.type === 'compare') {
     return Object.assign({}, input, {
