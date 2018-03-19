@@ -14,17 +14,17 @@ function createRange(input) {
   if (input.type !== 'compare') return;
   switch (input.op) {
     case '=':
-      return ranges.eq([input.right.value]);
+      return ranges.eq([input.right.value], true, { right: input.right });
     case '!=':
-      return ranges.neq([input.right.value]);
+      return ranges.neq([input.right.value], true, { right: input.right });
     case '<':
-      return ranges.lt(input.right.value);
+      return ranges.lt(input.right.value, false, { right: input.right });
     case '>':
-      return ranges.gt(input.right.value);
+      return ranges.gt(input.right.value, false, { right: input.right });
     case '<=':
-      return ranges.lt(input.right.value, true);
+      return ranges.lt(input.right.value, true, { right: input.right });
     case '>=':
-      return ranges.gt(input.right.value, true);
+      return ranges.gt(input.right.value, true, { right: input.right });
   }
 }
 
@@ -133,17 +133,21 @@ export default function simplify(input, inverted = false) {
       let entry = columns[key];
       entry.value.forEach(v => {
         let op = v.type;
+        if (op === '*') return;
         if (op === '<' && v.equal) op = '<=';
         if (op === '>' && v.equal) op = '>=';
         values.push({
           type: 'compare',
           op,
           left: entry.key,
-          right: { type: 'number', value: v.value },
+          right: v.right,
         });
       });
     }
-    console.log(columns);
+    if (values.length === 1) return values[0];
+    if (values.length === 0) {
+      return { type: 'boolean', value: input.op === '||' };
+    }
     return Object.assign({}, input, { op, values });
   } else if (inverted && input.type === 'compare') {
     return Object.assign({}, input, {

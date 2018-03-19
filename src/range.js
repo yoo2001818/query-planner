@@ -24,15 +24,15 @@ import { compare } from './comparator';
 // purpose, special instruction '*' is used to mark that all range is
 // qualified.
 
-export function gt(value, equal = false) {
+export function gt(value, equal = false, data) {
   return [
-    { type: '>', value, equal },
+    { type: '>', value, equal, ...data },
   ];
 }
 
-export function lt(value, equal = false) {
+export function lt(value, equal = false, data) {
   return [
-    { type: '<', value, equal },
+    { type: '<', value, equal, ...data },
   ];
 }
 
@@ -57,27 +57,27 @@ export function range(gt, lt, gte = false, lte = false) {
   }
 }
 
-export function eq(values, noSort) {
+export function eq(values, noSort, data) {
   if (values.length === 0) return [];
   if (noSort) {
-    return values.map(v => ({ type: '=', value: v }));
+    return values.map(v => ({ type: '=', value: v, ...data }));
   }
   let arr = values.slice();
   arr.sort(compare);
   let result = [{ type: '=', value: arr[0] }];
   for (let i = 1; i < arr.length; ++i) {
     if (arr[i] !== arr[i - 1]) {
-      result.push({ type: '=', value: arr[i] });
+      result.push({ type: '=', value: arr[i], ...data });
     }
   }
   return result;
 }
 
-export function neq(values, noSort) {
+export function neq(values, noSort, data) {
   if (values.length === 0) return [];
   if (noSort) {
     return [{ type: '*' }].concat(
-      values.map(v => ({ type: '!=', value: v })));
+      values.map(v => ({ type: '!=', value: v, ...data })));
   }
   let arr = values.slice();
   arr.sort(compare);
@@ -87,7 +87,7 @@ export function neq(values, noSort) {
   ];
   for (let i = 1; i < arr.length; ++i) {
     if (arr[i] !== arr[i - 1]) {
-      result.push({ type: '!=', value: arr[i] });
+      result.push({ type: '!=', value: arr[i], ...data });
     }
   }
   return result;
@@ -112,14 +112,14 @@ export function not(query) {
         return null;
       case '>':
         hasSign = true;
-        return { type: '<', equal: !op.equal, value: op.value };
+        return { ...op, type: '<', equal: !op.equal, value: op.value };
       case '<':
-        return { type: '>', equal: !op.equal, value: op.value };
+        return { ...op, type: '>', equal: !op.equal, value: op.value };
       case '=':
         hasEqual = true;
-        return { type: '!=', value: op.value };
+        return { ...op, type: '!=', value: op.value };
       case '!=':
-        return { type: '=', value: op.value };
+        return { ...op, type: '=', value: op.value };
     }
   }).filter(v => v != null);
   if (!hasSign && hasEqual) return [{ type: '*' }].concat(output);
@@ -153,7 +153,7 @@ const OR_EQUAL_ACTIONS = [
   // Do nothing.
   () => null,
   // If both don't have equal sign, create !=. Otherwise, do nothing.
-  (a, b) => (a.equal || b.equal) ? null : { type: '!=', value: a.value },
+  (a, b) => (a.equal || b.equal) ? null : { ...a, type: '!=', value: a.value },
 ];
 
 // Please refer to RANGE_TABLE's flag and OR_EQUAL_ACTIONS to see how it
@@ -256,9 +256,9 @@ export function or(a, b) {
 
 const AND_EQUAL_ACTIONS = [
   // If both lack equal sign, ignore. or =
-  (a, b) => a.equal && b.equal ? { type: '=', value: a.value } : null,
+  (a, b) => a.equal && b.equal ? { ...a, type: '=', value: a.value } : null,
   // Variant of the top - equal vs < or >.
-  (a, b) => b.equal ? { type: '=', value: a.value } : null,
+  (a, b) => b.equal ? { ...a, type: '=', value: a.value } : null,
   // Select anything; prefer the one without equal flag.
   (a, b) => a.equal ? b : a,
   // Do nothing.
