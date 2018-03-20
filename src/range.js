@@ -100,7 +100,7 @@ export function not(query) {
   // - If = is met outside, set '*' flag. If > and < is not met until the end,
   //   insert '*' range at the first. Then, convert it to !=.
   // - If * is met, remove it.
-  // - If != is met inside, change it to =. 
+  // - If != is met inside, change it to =.
 
   // Special case: empty array
   if (query.length === 0) return [{ type: '*' }];

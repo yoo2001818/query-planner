@@ -62,39 +62,6 @@ export default function simplify(input, inverted = false) {
         right: input.max,
       }],
     }, inverted);
-  } else if (input.type === 'case') {
-    let notTable = [];
-    let result = [];
-    for (let match of input.matches) {
-      let query = input.value == null ? match.query : {
-        type: 'compare',
-        op: '=',
-        left: input.value,
-        right: match.query,
-      };
-      result.push({
-        type: 'logical',
-        op: '&&',
-        values: notTable.concat(query, match.value),
-      });
-      notTable.push({
-        type: 'unary',
-        op: '!',
-        value: query,
-      });
-    }
-    if (input.else != null) {
-      result.push({
-        type: 'logical',
-        op: '&&',
-        values: notTable.concat(input.else),
-      });
-    }
-    return simplify({
-      type: 'logical',
-      op: '||',
-      values: result,
-    }, inverted);
   } else if (input.type === 'logical') {
     let op = (input.op === '||') === inverted ? '&&' : '||';
     let values = [];
@@ -105,6 +72,10 @@ export default function simplify(input, inverted = false) {
       } else {
         values.push(value);
       }
+    }
+    // Check short-circuit
+    if (values.some(v => v.type === 'boolean' && v.value === (op === '||'))) {
+      return { type: 'boolean', value: op === '||' };
     }
     // Remove unnecessary statements from logical operator; Store all the
     // predicates onto the range object, then rebuild the tree to contain
@@ -148,6 +119,11 @@ export default function simplify(input, inverted = false) {
     if (values.length === 0) {
       return { type: 'boolean', value: input.op === '||' };
     }
+    // Eliminate properties by distributive property -
+    // (a AND b) OR (c AND b) should be converted to (a OR c) AND b.
+    // (a AND b) OR (c AND b) OR d -> ((a OR c) AND b) OR d
+    // To do that, we find mutual predicate for each value, and combine
+    // everything.
     return Object.assign({}, input, { op, values });
   } else if (inverted && input.type === 'compare') {
     return Object.assign({}, input, {

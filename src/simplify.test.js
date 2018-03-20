@@ -39,7 +39,7 @@ describe('simplify', () => {
     expect(simplify(getAST('SELECT * WHERE !(a = 1 AND !(c = 1 OR d = 1));')))
       .toEqual(getAST('SELECT * WHERE a != 1 OR c = 1 OR d = 1;'));
     expect(simplify(getAST('SELECT * WHERE !(a = 1 AND !(c = 1 AND d = 1));')))
-      .toEqual(getAST('SELECT * WHERE a != 1 OR (c = 1 AND d = 1);'));
+      .toEqual(getAST('SELECT * WHERE (c = 1 AND d = 1) OR a != 1;'));
   });
   it('should simplify between expression', () => {
     expect(simplify(getAST('SELECT * WHERE a BETWEEN 1 AND 2;')))
@@ -56,16 +56,6 @@ describe('simplify', () => {
   it('should simplify not in expression', () => {
     expect(simplify(getAST('SELECT * WHERE a NOT IN (1, 2, 3);')))
       .toEqual(getAST('SELECT * WHERE a != 1 AND a != 2 AND a != 3;'));
-  });
-  it('should simplify case expression', () => {
-    expect(simplify(getAST('SELECT * WHERE CASE a ' +
-      'WHEN 1 THEN 2 WHEN 2 THEN 3 ELSE 4 END;')))
-      .toEqual(getAST('SELECT * WHERE (a = 1 AND 2) OR ' +
-        '(a != 1 AND a = 2 AND 3) OR (a != 1 AND a != 2 AND 4);'));
-    expect(simplify(getAST('SELECT * WHERE CASE ' +
-      'WHEN a = 1 THEN 2 WHEN b = 2 THEN 3 ELSE 4 END;')))
-      .toEqual(getAST('SELECT * WHERE (a = 1 AND 2) OR ' +
-        '(a != 1 AND b = 2 AND 3) OR (a != 1 AND b != 2 AND 4);'));
   });
   it('should simplify nested operators', () => {
     expect(simplify(getAST('SELECT * WHERE a AND (b AND c);')))
