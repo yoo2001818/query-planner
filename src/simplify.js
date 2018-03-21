@@ -124,6 +124,51 @@ export default function simplify(input, inverted = false) {
     // (a AND b) OR (c AND b) OR d -> ((a OR c) AND b) OR d
     // To do that, we find mutual predicate for each value, and combine
     // everything.
+    let counts = {};
+    let fulfilled = [];
+    values.forEach(value => {
+      if (value.type === 'compare') {
+        let name = JSON.stringify(value);
+        counts[name] = (counts[name] || 0) + 1;
+        if (counts[name] === values.length) fulfilled.push(value);
+      } else if (value.type === 'logical') {
+        value.values.forEach(predicate => {
+          let name = JSON.stringify(predicate);
+          counts[name] = (counts[name] || 0) + 1;
+          if (counts[name] === values.length) fulfilled.push(predicate);
+        });
+      }
+    });
+    // If fulfilled is not empty, we can perform elimination :)
+    if (fulfilled.length > 0) {
+      return {
+        type: 'logical',
+        op: op === '||' ? '&&' : '||',
+        values: [{
+          type: 'logical',
+          op,
+          values: values.map(value => {
+            if (value.type === 'compare') {
+              let name = JSON.stringify(value);
+              if (counts[name] >= values.length) return null;
+              return value;
+            } else if (value.type === 'logical') {
+              return {
+                type: 'logical',
+                op: value.op,
+                values: value.values.filter(predicate => {
+                  let name = JSON.stringify(value);
+                  if (counts[name] >= values.length) return false;
+                  return true;
+                }),
+              };
+            }
+          }).filter(v => v != null),
+        }].concat(fulfilled),
+      };
+    }
+    console.log(fulfilled);
+    // Does any operator has sufficient count? 
     return Object.assign({}, input, { op, values });
   } else if (inverted && input.type === 'compare') {
     return Object.assign({}, input, {
