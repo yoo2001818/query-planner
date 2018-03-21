@@ -1,5 +1,4 @@
 import * as ranges from './range';
-import deepEqual from 'deep-equal';
 
 const compareInvertOp = {
   '>=': '<',
@@ -77,12 +76,18 @@ export default function simplify(input, inverted = false) {
     if (values.some(v => v.type === 'boolean' && v.value === (op === '||'))) {
       return { type: 'boolean', value: op === '||' };
     }
+    if (values.every(v => v.type === 'boolean' && v.value === (op !== '||'))) {
+      return { type: 'boolean', value: op !== '||' };
+    }
     // Remove unnecessary statements from logical operator; Store all the
     // predicates onto the range object, then rebuild the tree to contain
     // only allowed types.
     // Basically, we flush every compare operators - then rebuild it later.
     let columns = {};
     values = values.filter(value => {
+      if (value.type === 'boolean' && value.value === (op !== '||')) {
+        return false;
+      }
       if (value.type !== 'compare' || value.left.type !== 'column') {
         return true;
       }
@@ -141,7 +146,7 @@ export default function simplify(input, inverted = false) {
     });
     // If fulfilled is not empty, we can perform elimination :)
     if (fulfilled.length > 0) {
-      return {
+      return simplify({
         type: 'logical',
         op: op === '||' ? '&&' : '||',
         values: [{
@@ -157,17 +162,15 @@ export default function simplify(input, inverted = false) {
                 type: 'logical',
                 op: value.op,
                 values: value.values.filter(predicate => {
-                  let name = JSON.stringify(value);
-                  if (counts[name] >= values.length) return false;
-                  return true;
+                  let name = JSON.stringify(predicate);
+                  return counts[name] < values.length;
                 }),
               };
             }
           }).filter(v => v != null),
         }].concat(fulfilled),
-      };
+      });
     }
-    console.log(fulfilled);
     // Does any operator has sufficient count? 
     return Object.assign({}, input, { op, values });
   } else if (inverted && input.type === 'compare') {
