@@ -130,21 +130,51 @@ export default function simplify(input, inverted = false) {
     // To do that, we find mutual predicate for each value, and combine
     // everything.
     let counts = {};
-    let fulfilled = [];
     values.forEach(value => {
       if (value.type === 'compare') {
         let name = JSON.stringify(value);
-        counts[name] = (counts[name] || 0) + 1;
-        if (counts[name] === values.length) fulfilled.push(value);
+        if (counts[name] == null) counts[name] = { count: 0, value };
+        counts[name].count = counts[name].count + 1;
       } else if (value.type === 'logical') {
         value.values.forEach(predicate => {
           let name = JSON.stringify(predicate);
-          counts[name] = (counts[name] || 0) + 1;
-          if (counts[name] === values.length) fulfilled.push(predicate);
+          if (counts[name] == null) counts[name] = { count: 0, value };
+          counts[name].count = counts[name].count + 1;
         });
       }
     });
-    // If fulfilled is not empty, we can perform elimination :)
+    // Check most mutual predicate, and use it.
+    // TODO It could use multiple mutual predicates.
+    let maxCount = Object.keys(counts)
+      .reduce((p, v) => Math.max(p, counts[v].count), 0);
+    let fulfilled = Object.keys(counts)
+      .map(v => counts[v]).filter(v => v.count === maxCount);
+    let leftovers = [];
+    let result = values.map(value => {
+      if (value.type === 'compare') {
+        let name = JSON.stringify(value);
+        if (counts[name] !== maxCount) leftovers.push(value);
+        return null;
+      } else if (value.type === 'logical') {
+        let caught = false;
+        let result = {
+          type: 'logical',
+          op: value.op,
+          values: value.values.filter(predicate => {
+            let name = JSON.stringify(predicate);
+            if (counts[name] === maxCount) {
+              caught = true;
+              return true;
+            }
+            return false;
+          }),
+        };
+        if (caught) return result;
+        leftovers.push(result);
+        return null;
+      }
+    }).filter(v => v != null);
+    // If fulfilled is not empty, we can perform elimination :
     if (fulfilled.length > 0) {
       return simplify({
         type: 'logical',
@@ -152,23 +182,8 @@ export default function simplify(input, inverted = false) {
         values: [{
           type: 'logical',
           op,
-          values: values.map(value => {
-            if (value.type === 'compare') {
-              let name = JSON.stringify(value);
-              if (counts[name] >= values.length) return null;
-              return value;
-            } else if (value.type === 'logical') {
-              return {
-                type: 'logical',
-                op: value.op,
-                values: value.values.filter(predicate => {
-                  let name = JSON.stringify(predicate);
-                  return counts[name] < values.length;
-                }),
-              };
-            }
-          }).filter(v => v != null),
-        }].concat(fulfilled),
+          values: result,
+        }].concat(leftovers, fulfilled),
       });
     }
     // Does any operator has sufficient count? 
@@ -178,6 +193,5 @@ export default function simplify(input, inverted = false) {
       op: compareInvertOp[input.op],
     });
   }
-  // Remove implied / unnecesary operators. Simplify again if necessary.
   return input;
 }
