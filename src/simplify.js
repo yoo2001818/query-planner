@@ -138,7 +138,9 @@ export default function simplify(input, inverted = false) {
       } else if (value.type === 'logical') {
         value.values.forEach(predicate => {
           let name = JSON.stringify(predicate);
-          if (counts[name] == null) counts[name] = { count: 0, value };
+          if (counts[name] == null) {
+            counts[name] = { count: 0, value: predicate };
+          }
           counts[name].count = counts[name].count + 1;
         });
       }
@@ -147,44 +149,46 @@ export default function simplify(input, inverted = false) {
     // TODO It could use multiple mutual predicates.
     let maxCount = Object.keys(counts)
       .reduce((p, v) => Math.max(p, counts[v].count), 0);
-    let fulfilled = Object.keys(counts)
-      .map(v => counts[v]).filter(v => v.count === maxCount);
-    let leftovers = [];
-    let result = values.map(value => {
-      if (value.type === 'compare') {
-        let name = JSON.stringify(value);
-        if (counts[name] !== maxCount) leftovers.push(value);
-        return null;
-      } else if (value.type === 'logical') {
-        let caught = false;
-        let result = {
-          type: 'logical',
-          op: value.op,
-          values: value.values.filter(predicate => {
-            let name = JSON.stringify(predicate);
-            if (counts[name] === maxCount) {
-              caught = true;
+    if (maxCount >= 2) {
+      let fulfilled = Object.keys(counts)
+        .map(v => counts[v]).filter(v => v.count === maxCount);
+      let leftovers = [];
+      let result = values.map(value => {
+        if (value.type === 'compare') {
+          let name = JSON.stringify(value);
+          if (counts[name].count !== maxCount) leftovers.push(value);
+          return null;
+        } else if (value.type === 'logical') {
+          let caught = false;
+          let result = {
+            type: 'logical',
+            op: value.op,
+            values: value.values.filter(predicate => {
+              let name = JSON.stringify(predicate);
+              if (counts[name].count === maxCount) {
+                caught = true;
+                return false;
+              }
               return true;
-            }
-            return false;
-          }),
-        };
-        if (caught) return result;
-        leftovers.push(result);
-        return null;
-      }
-    }).filter(v => v != null);
-    // If fulfilled is not empty, we can perform elimination :
-    if (fulfilled.length > 0) {
-      return simplify({
-        type: 'logical',
-        op: op === '||' ? '&&' : '||',
-        values: [{
+            }),
+          };
+          if (caught) return result;
+          leftovers.push(value);
+          return null;
+        }
+      }).filter(v => v != null);
+      // If fulfilled is not empty, we can perform elimination.
+      if (fulfilled.length > 0) {
+        return simplify({
           type: 'logical',
-          op,
-          values: result,
-        }].concat(leftovers, fulfilled),
-      });
+          op: op === '||' ? '&&' : '||',
+          values: [{
+            type: 'logical',
+            op,
+            values: result,
+          }].concat(leftovers, fulfilled.map(v => v.value)),
+        });
+      }
     }
     // Does any operator has sufficient count? 
     return Object.assign({}, input, { op, values });
