@@ -177,16 +177,22 @@ export default function simplify(input, inverted = false) {
           return null;
         }
       }).filter(v => v != null);
+      let wrapped = {
+        type: 'logical',
+        op: op === '||' ? '&&' : '||',
+        values: [{
+          type: 'logical',
+          op,
+          values: result,
+        }].concat(fulfilled.map(v => v.value)),
+      };
       // If fulfilled is not empty, we can perform elimination.
       if (fulfilled.length > 0) {
+        if (leftovers.length === 0) return simplify(wrapped);
         return simplify({
           type: 'logical',
-          op: op === '||' ? '&&' : '||',
-          values: [{
-            type: 'logical',
-            op,
-            values: result,
-          }].concat(leftovers, fulfilled.map(v => v.value)),
+          op,
+          values: [wrapped].concat(leftovers),
         });
       }
     }

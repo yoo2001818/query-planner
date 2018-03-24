@@ -72,6 +72,6 @@ describe('simplify', () => {
       .toEqual(getAST('SELECT * WHERE a = 1 OR b = 1;'));
     expect(simplify(getAST('SELECT * WHERE ' +
       '(a > 5 OR b = 1) AND (a > 3 OR b = 1) AND c = 1;')))
-      .toEqual(getAST('SELECT * WHERE (b = 1 OR a > 5) AND c = 1;'));
+      .toEqual(getAST('SELECT * WHERE (a > 5 OR b = 1) AND c = 1;'));
   });
 });
