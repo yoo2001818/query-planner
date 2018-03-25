@@ -27,6 +27,65 @@ function createRange(input) {
   }
 }
 
+// Simplify is implemented using various levels.
+// 1. Inverting
+// 2. Expanding in / between
+// 3. Check short-curcuiting
+// 4. Remove unnecessary predicates 
+// 5. Eliminate by distributive property
+
+function simplifyInvert(input, inverted = false) {
+  if (input.type === 'unary' && input.op === '!') {
+    return simplifyInvert(input.value, !inverted);
+  } else if (input.type === 'logical') {
+    // TODO
+  } else if (inverted && input.type === 'compare') {
+    return Object.assign({}, input, {
+      op: compareInvertOp[input.op],
+    });
+  } else {
+    return input;
+  }
+}
+
+function simplifyExpand(input, inverted) {
+  if (input.type === 'in') {
+    return simplifyInvert({
+      type: 'logical',
+      op: '||',
+      // TODO Handle subquery
+      values: input.values.values.map(v => ({
+        type: 'compare',
+        op: '=',
+        left: input.target,
+        right: v,
+      })),
+    }, inverted);
+  } else if (input.type === 'between') {
+    return simplifyInvert({
+      type: 'logical',
+      op: '&&',
+      values: [{
+        type: 'compare',
+        op: '>=',
+        left: input.target,
+        right: input.min,
+      }, {
+        type: 'compare',
+        op: '<=',
+        left: input.target,
+        right: input.max,
+      }],
+    }, inverted);
+  } else {
+    return input;
+  }
+}
+
+function newSimplify(input) {
+  return simplifyExpand(simplifyInvert(input, false));
+}
+
 // Returns simplified AST of where clause.
 export default function simplify(input, inverted = false) {
   // The simplify method is required to traverse the AST, using recursion.
