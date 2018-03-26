@@ -78,8 +78,16 @@ function simplifyExpand(input, inverted) {
       }],
     }, inverted);
   } else {
-    return input;
+    return simplifyInvert(input, inverted);
   }
+}
+
+function simplifyLogical(input) {
+  return input;
+}
+
+function simplifyDistributive(input) {
+  return input;
 }
 
 function newSimplify(input) {
