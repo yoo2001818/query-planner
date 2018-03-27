@@ -143,12 +143,12 @@ function simplify2(input) {
       });
     });
   }
-  if (values.every(v => v.type === 'boolean' && v.value === (op !== '||'))) {
-    return { type: 'boolean', value: op !== '||' };
-  }
   if (values.length === 1) return values[0];
   if (values.length === 0) {
     return { type: 'boolean', value: op === '||' };
+  }
+  if (values.every(v => v.type === 'boolean' && v.value === (op !== '||'))) {
+    return { type: 'boolean', value: op !== '||' };
   }
   // Eliminate properties by distributive property -
   // (a AND b) OR (c AND b) should be converted to (a OR c) AND b.
