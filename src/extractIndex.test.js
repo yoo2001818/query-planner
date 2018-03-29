@@ -21,5 +21,35 @@ describe('extractIndex', () => {
         additional: getAST('SELECT * WHERE c = 1;'),
         leftover: { type: 'boolean', value: false },
       });
+    expect(extractIndex(['a', 'b'],
+      getAST('SELECT * WHERE a = \'1\' OR b = 1;')))
+      .toEqual({
+        index: getAST('SELECT * WHERE a = \'1\';'),
+        additional: { type: 'boolean', value: true },
+        leftover: getAST('SELECT * WHERE c = 1;'),
+      });
+  });
+  it('should keep index order range', () => {
+    expect(extractIndex(['a', 'b'],
+      getAST('SELECT * WHERE a = 1 OR b = 1;')))
+      .toEqual({
+        index: getAST('SELECT * WHERE a = 1 AND b = 1;'),
+        additional: { type: 'boolean', value: true },
+        leftover: { type: 'boolean', value: false },
+      });
+    expect(extractIndex(['a', 'b'],
+      getAST('SELECT * WHERE a > 1 OR b = 1;')))
+      .toEqual({
+        index: getAST('SELECT * WHERE a > 1;'),
+        additional: getAST('SELECT * WHERE b = 1;'),
+        leftover: { type: 'boolean', value: false },
+      });
+    expect(extractIndex(['a', 'b'],
+      getAST('SELECT * WHERE a = 1 OR b > 1;')))
+      .toEqual({
+        index: getAST('SELECT * WHERE a = 1 AND b > 1;'),
+        additional: { type: 'boolean', value: true },
+        leftover: { type: 'boolean', value: false },
+      });
   });
 });
