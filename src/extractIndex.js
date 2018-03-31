@@ -29,6 +29,26 @@ export default function extractIndex(index, input) {
   // additional predicates.
   // index predicates shouldn't be too complicated - it should be able to
   // contain all the range required for the index.
+  
+  // Build the index flags table and the list of indexes.
+  let state = {
+    tree: null,
+    leftover: null,
+    flags: index.map(() => 0),
+  };
+
+  function traverse(input) {
+    if (input.type === 'compare') {
+      // Compare against index list
+    } else if (input.type === 'logical') {
+      let isAnd = input.op === '&&';
+      // Traverse to bottom.
+      input.values.forEach(v => traverse(v));
+    }
+  }
+
+  traverse(input);
+
   return {
     index: null,
     additional: null,
