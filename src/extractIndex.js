@@ -31,27 +31,27 @@ export default function extractIndex(index, input) {
   // contain all the range required for the index.
   
   // Build the index flags table and the list of indexes.
-  let state = {
-    tree: null,
-    leftover: null,
-    flags: index.map(() => 0),
-  };
-
-  function traverse(input) {
+  function traverse(input, state) {
     if (input.type === 'compare') {
       // Compare against index list
+      if (input.left.type !== 'column') return;
+      let id = index.indexOf(input.left.value);
+      if (id === -1) return state;
+      console.log(id);
+      // TODO set state and flags
+      return state;
     } else if (input.type === 'logical') {
       let isAnd = input.op === '&&';
       // Traverse to bottom.
-      input.values.forEach(v => traverse(v));
+      input.values.reduce((state, v) => {
+        return traverse(v, state);
+      }, state);
     }
   }
 
-  traverse(input);
-
-  return {
-    index: null,
-    additional: null,
+  return traverse(input, {
+    tree: null,
     leftover: null,
-  };
+    flags: index.map(() => 0),
+  });
 }
