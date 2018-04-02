@@ -36,10 +36,19 @@ export default function extractIndex(index, input) {
       // Compare against index list
       if (input.left.type !== 'column') return;
       let id = index.indexOf(input.left.value);
-      if (id === -1) return state;
-      console.log(id);
-      // TODO set state and flags
-      return state;
+      if (id === -1) {
+        return {
+          tree: null,
+          leftover: input,
+          flags: state.flags,
+        };
+      }
+      let flagVal = input.op === '==' ? 1 : 2;
+      return {
+        tree: input,
+        leftover: null,
+        flags: state.flags.map((v, i) => i === id ? Math.max(v, flagVal) : v);
+      }
     } else if (input.type === 'logical') {
       let isAnd = input.op === '&&';
       // Traverse to bottom.
