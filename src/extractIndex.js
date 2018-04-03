@@ -47,12 +47,12 @@ export default function extractIndex(index, input) {
       return {
         tree: input,
         leftover: null,
-        flags: state.flags.map((v, i) => i === id ? Math.max(v, flagVal) : v);
-      }
+        flags: state.flags.map((v, i) => i === id ? Math.max(v, flagVal) : v),
+      };
     } else if (input.type === 'logical') {
       let isAnd = input.op === '&&';
       // Traverse to bottom.
-      input.values.reduce((state, v) => {
+      return input.values.reduce((state, v) => {
         return traverse(v, state);
       }, state);
     }
