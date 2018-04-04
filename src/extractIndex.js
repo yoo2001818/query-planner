@@ -31,36 +31,54 @@ export default function extractIndex(index, input) {
   // contain all the range required for the index.
   
   // Build the index flags table and the list of indexes.
-  function traverse(input, state) {
+  function traverse(input) {
     if (input.type === 'compare') {
       // Compare against index list
       if (input.left.type !== 'column') return;
-      let id = index.indexOf(input.left.value);
+      let id = index.indexOf(input.left.name);
       if (id === -1) {
         return {
           tree: null,
           leftover: input,
-          flags: state.flags,
+          flags: index.map(() => 0),
         };
       }
       let flagVal = input.op === '==' ? 1 : 2;
       return {
         tree: input,
         leftover: null,
-        flags: state.flags.map((v, i) => i === id ? Math.max(v, flagVal) : v),
+        flags: index.map((_, i) => i === id ? flagVal : 0),
       };
     } else if (input.type === 'logical') {
       let isAnd = input.op === '&&';
-      // Traverse to bottom.
-      return input.values.reduce((state, v) => {
-        return traverse(v, state);
-      }, state);
+      // Traverse to bottom - combine flags and create new tree / leftover.
+      // (a = 1 AND b = 1) OR (a = 2 AND b = 2)
+      // a = 1 OR a = 2, (a = 1 AND b = 1) OR (a = 2 AND b = 2)
+      let tree = [];
+      let leftover = [];
+      let flags = null;
+      input.values.forEach(v => {
+        let state = traverse(v);
+        if (state.tree != null) tree.push(state.tree);
+        if (state.leftover != null) leftover.push(state.leftover);
+        // Merge flags. Use value if flags is null, or run AND/OR according to
+        // the input's op.
+        if (flags == null) {
+          flags = state.flags;
+        } else {
+          flags = flags.map((v, i) => {
+            if (isAnd) return Math.max(v, state.flags[i]);
+            return Math.min(v, state.flags[i]);
+          });
+        }
+      });
+      return { tree, leftover, flags };
     }
   }
 
-  return traverse(input, {
+  console.log(traverse(input, {
     tree: null,
     leftover: null,
     flags: index.map(() => 0),
-  });
+  }));
 }
