@@ -57,8 +57,23 @@ export default function extractIndex(index, input) {
       let tree = [];
       let leftover = [];
       let flags = null;
-      input.values.forEach(v => {
-        let state = traverse(v);
+      // If OR is being used, we need to select only one index, a 'superior'
+      // index, then move failed one to leftover.
+      // To do that, we need to pre-traverse tree and select 'superior'
+      // index.
+      let states = input.values.map(traverse);
+      let bestIndex = states.reduce((p, v) => {
+        let indexPos = v.flags.findIndex(v => v !== 0);
+        if (indexPos === -1) return p;
+        return Math.min(p, indexPos);
+      }, Infinity);
+      states.forEach(state => {
+        let indexPos = state.flags.findIndex(v => v !== 0);
+        if (!isAnd && indexPos !== bestIndex) {
+          if (state.tree != null) leftover.push(state.tree);
+          if (state.leftover != null) leftover.push(state.leftover);
+          return;
+        }
         if (state.tree != null) tree.push(state.tree);
         if (state.leftover != null) leftover.push(state.leftover);
         // Merge flags. Use value if flags is null, or run AND/OR according to
