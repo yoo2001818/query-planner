@@ -3,6 +3,20 @@
 // Thus, it can't compare through many indices - pre-filtering should be done
 // before running this function.
 
+function generateLogical(input, op) {
+  if (input.length === 0) {
+    return null;
+  } else if (input.length === 1) {
+    return input[0];
+  } else {
+    return {
+      type: 'logical',
+      op: input.op,
+      values: input,
+    };
+  }
+}
+
 export default function extractIndex(index, input) {
   // We need to consider each AST as a diverging branch -
   // We check if there is any indexable entry in the branch.
@@ -87,6 +101,8 @@ export default function extractIndex(index, input) {
           });
         }
       });
+      tree = generateLogical(tree, input.op);
+      leftover = generateLogical(leftover, input.op);
       return { tree, leftover, flags };
     }
   }
