@@ -11,7 +11,7 @@ function generateLogical(input, op) {
   } else {
     return {
       type: 'logical',
-      op: input.op,
+      op: op,
       values: input,
     };
   }
@@ -43,7 +43,7 @@ export default function extractIndex(index, input) {
   // additional predicates.
   // index predicates shouldn't be too complicated - it should be able to
   // contain all the range required for the index.
-  
+
   // Build the index flags table and the list of indexes.
   function traverse(input) {
     if (input.type === 'compare') {
